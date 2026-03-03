@@ -9,13 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.Message
+import io.github.initrc.chatbot.ui.common.CircleIconButton
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
 @Composable
@@ -175,24 +173,20 @@ fun SendView(
             ),
             modifier = Modifier.fillMaxWidth()
         )
-        IconButton(
+        CircleIconButton(
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(bottom = 2.dp, end = 2.dp),
             onClick = {
                 onSendClick(text)
                 text = ""
-            },
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(bottom = 8.dp, end = 8.dp)
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer)
+            }
         ) {
             Icon(
                 painter = painterResource(R.drawable.send_24),
                 contentDescription = "Send",
             )
         }
-
     }
 }
 
