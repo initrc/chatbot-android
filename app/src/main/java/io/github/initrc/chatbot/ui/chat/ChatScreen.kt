@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,13 +46,19 @@ fun ChatScreen(
     val messages by chatViewModel.messages.collectAsStateWithLifecycle()
     ChatScreen(messages, chatViewModel::onSendClick, modifier)
 }
+
 @Composable
 private fun ChatScreen(
     messages: List<Message>,
     onSendClick: (String) -> Unit,
     modifier: Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize().padding(all = 8.dp)) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .imePadding()
+            .padding(all = 8.dp)
+    ) {
         MessageList(
             messages = messages,
             modifier = Modifier.fillMaxSize()
