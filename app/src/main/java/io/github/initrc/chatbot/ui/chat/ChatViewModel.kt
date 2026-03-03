@@ -3,14 +3,17 @@ package io.github.initrc.chatbot.ui.chat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.initrc.chatbot.data.ChatRepository
 import io.github.initrc.chatbot.data.Message
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 import kotlin.collections.listOf
 
-class ChatViewModel(
+@HiltViewModel
+class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
 ) : ViewModel() {
     private val _messages = MutableStateFlow(listOf<Message>())

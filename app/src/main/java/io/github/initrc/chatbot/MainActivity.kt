@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import io.github.initrc.chatbot.data.ChatRepository
+import dagger.hilt.android.AndroidEntryPoint
 import io.github.initrc.chatbot.ui.chat.ChatScreen
-import io.github.initrc.chatbot.ui.chat.ChatViewModel
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,9 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ChatbotTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val chatViewModel = ChatViewModel(ChatRepository())
                     ChatScreen(
-                        chatViewModel = chatViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

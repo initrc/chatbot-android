@@ -1,6 +1,8 @@
 package io.github.initrc.chatbot.data
 
-class ChatRepository {
+import javax.inject.Inject
+
+class ChatRepository @Inject constructor() {
     private val localDataSource = ChatLocalDataSource()
 
     suspend fun sendMessage(message: String): String {

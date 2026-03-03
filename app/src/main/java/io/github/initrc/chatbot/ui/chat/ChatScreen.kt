@@ -34,6 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.Message
@@ -42,7 +43,7 @@ import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
 @Composable
 fun ChatScreen(
-    chatViewModel: ChatViewModel,
+    chatViewModel: ChatViewModel = hiltViewModel(),
     modifier: Modifier
 ) {
     val messages by chatViewModel.messages.collectAsStateWithLifecycle()
