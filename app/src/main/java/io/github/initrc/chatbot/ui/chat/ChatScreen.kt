@@ -47,12 +47,14 @@ fun ChatScreen(
     modifier: Modifier
 ) {
     val messages by chatViewModel.messages.collectAsStateWithLifecycle()
-    ChatScreen(messages, chatViewModel::onSendClick, modifier)
+    val chatState by chatViewModel.chatState.collectAsStateWithLifecycle()
+    ChatScreen(messages, chatState, chatViewModel::onSendClick, modifier)
 }
 
 @Composable
 private fun ChatScreen(
     messages: List<Message>,
+    chatState: ChatState,
     onSendClick: (String) -> Unit,
     modifier: Modifier
 ) {
@@ -72,6 +74,7 @@ private fun ChatScreen(
         )
         SendView(
             onSendClick = onSendClick,
+            isEnabled = chatState == ChatState.IDLE,
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
@@ -151,6 +154,7 @@ fun MessageListPreview() {
 @Composable
 fun SendView(
     onSendClick: (String) -> Unit,
+    isEnabled: Boolean,
     modifier: Modifier,
 ) {
     var text by rememberSaveable { mutableStateOf("") }
@@ -175,13 +179,14 @@ fun SendView(
             modifier = Modifier.fillMaxWidth()
         )
         CircleIconButton(
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(bottom = 2.dp, end = 2.dp),
+            isEnabled = isEnabled,
             onClick = {
                 onSendClick(text)
                 text = ""
-            }
+            },
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(bottom = 2.dp, end = 2.dp),
         ) {
             Icon(
                 painter = painterResource(R.drawable.send_24),
@@ -210,6 +215,7 @@ fun ChatScreenPreview() {
                 ) + List(30) { index ->
                     Message("Text $index from bot", false)
                 },
+                chatState = ChatState.IDLE,
                 onSendClick = {},
                 modifier = Modifier,
             )
