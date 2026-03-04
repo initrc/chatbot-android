@@ -1,6 +1,5 @@
 package io.github.initrc.chatbot.ui.chat
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,19 +19,19 @@ class ChatViewModel @Inject constructor(
     val messages: StateFlow<List<Message>> = _messages
 
     fun onSendClick(inputText: String) {
-        val text = inputText.trim()
-        _messages.value += Message(text, true)
+        val promptText = inputText.trim()
+        _messages.value += Message(promptText, true)
+
+        var replyText = ""
+        val replyMessage = Message("", isFromMe = false)
+        _messages.value += replyMessage
+
         viewModelScope.launch {
-            val reply = sendMessage(text)
-            _messages.value += reply
+            chatRepository.sendMessage(promptText).collect { chunk ->
+                replyText += chunk
+                _messages.value = _messages.value.dropLast(1) +
+                        replyMessage.copy(body = replyText)
+            }
         }
-
-    }
-
-    private suspend fun sendMessage(text: String): Message {
-        return Message(
-            body = chatRepository.sendMessage(text),
-            isFromMe = false,
-        )
     }
 }
