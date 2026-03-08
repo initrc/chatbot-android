@@ -41,6 +41,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.Message
+import io.github.initrc.chatbot.data.ChatRole
 import io.github.initrc.chatbot.ui.common.CircleIconButton
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
@@ -117,7 +118,8 @@ fun MessageList(
 
 @Composable
 fun MessageView(message: Message) {
-    val modifier = if (message.isFromMe) {
+    val isFromMe = message.isFromMe()
+    val modifier = if (isFromMe) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
@@ -127,9 +129,9 @@ fun MessageView(message: Message) {
         Modifier.padding(8.dp)
     }
     Text(
-        text = message.body,
+        text = message.content,
         modifier = modifier,
-        style = if (message.isFromMe) {
+        style = if (isFromMe) {
             MaterialTheme.typography.bodyMedium
         } else {
             MaterialTheme.typography.bodyLarge
@@ -137,6 +139,8 @@ fun MessageView(message: Message) {
         },
     )
 }
+
+private fun Message.isFromMe(): Boolean = this.role == ChatRole.USER
 
 @Preview(
     name = "MessageList (light theme)",
@@ -153,8 +157,8 @@ fun MessageListPreview() {
         Surface {
             MessageList(
                 messages = listOf(
-                    Message("Text from me", true),
-                    Message("Text from bot", false)
+                    Message(role = ChatRole.USER, content = "Text from me"),
+                    Message(role = ChatRole.ASSISTANT, content = "Text from bot")
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -222,9 +226,9 @@ fun ChatScreenPreview() {
         Surface {
             ChatScreen(
                 messages = listOf(
-                    Message("Text from me", true),
+                    Message(role = ChatRole.USER, content = "Text from me"),
                 ) + List(30) { index ->
-                    Message("Text $index from bot", false)
+                    Message(role = ChatRole.ASSISTANT, content = "Text $index from bot")
                 },
                 chatState = ChatState.IDLE,
                 onSendClick = {},

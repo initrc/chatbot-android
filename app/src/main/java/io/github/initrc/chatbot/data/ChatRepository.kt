@@ -5,8 +5,9 @@ import javax.inject.Inject
 
 class ChatRepository @Inject constructor() {
     private val localDataSource = ChatLocalDataSource()
+    private val remoteDataSource = ChatRemoteDataSource()
 
-    suspend fun sendMessage(prompt: String): Flow<String> {
-        return localDataSource.sendMessage(prompt)
+    suspend fun sendMessage(messages: List<Message>): Flow<String> {
+        return remoteDataSource.sendMessage(messages)
     }
 }

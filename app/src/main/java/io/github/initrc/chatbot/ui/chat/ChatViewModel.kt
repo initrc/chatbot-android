@@ -5,12 +5,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.initrc.chatbot.data.ChatRepository
 import io.github.initrc.chatbot.data.Message
+import io.github.initrc.chatbot.data.ChatRole
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.collections.listOf
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -24,23 +24,23 @@ class ChatViewModel @Inject constructor(
 
     fun onSendClick(inputText: String) {
         val promptText = inputText.trim()
-        _messages.value += Message(promptText, true)
+        _messages.value += Message(role = ChatRole.USER, content = promptText)
 
         var replyText = ""
-        val replyMessage = Message("", isFromMe = false)
+        val replyMessage = Message(role = ChatRole.ASSISTANT, content = "")
         _messages.value += replyMessage
 
         viewModelScope.launch {
             try {
                 _chatState.value = ChatState.BUSY
-                chatRepository.sendMessage(promptText)
+                chatRepository.sendMessage(_messages.value.dropLast(1))
                     .onCompletion {
                         _chatState.value = ChatState.IDLE
                     }
                     .collect { chunk ->
                         replyText += chunk
                         _messages.value = _messages.value.dropLast(1) +
-                                replyMessage.copy(body = replyText)
+                                replyMessage.copy(content = replyText)
                     }
             } catch (e: Exception) {
                 // handle errors

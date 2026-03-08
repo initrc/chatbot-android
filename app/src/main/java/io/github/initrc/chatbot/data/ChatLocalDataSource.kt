@@ -5,9 +5,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 class ChatLocalDataSource : ChatService {
-    override suspend fun sendMessage(prompt: String): Flow<String> = flow {
+    override suspend fun sendMessage(messages: List<Message>): Flow<String> = flow {
         delay(500) // simulate thinking time
-        for (word in prompt.split(" ")) {
+        for (word in messages.last().content.split(" ")) {
             repeat(word.length) { emit("$word ") }
             delay(100)
         }
