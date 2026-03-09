@@ -16,16 +16,19 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
+import javax.inject.Singleton
 
-private const val BASE_URL = "https://api.groq.com/openai/v1"
-private const val API_KEY = ""
 private const val TAG = "ChatRemoteDataSource"
 
 private val json = Json { ignoreUnknownKeys = true }
 
-class ChatRemoteDataSource : ChatService {
+@Singleton
+class ChatRemoteDataSource @Inject constructor(
+    private val settingsLocalDataSource: SettingsLocalDataSource
+) : ChatService {
 
-    val client = HttpClient(CIO) {
+    private fun createClient(): HttpClient = HttpClient(CIO) {
         install(SSE)
         install(ContentNegotiation) {
             json()
@@ -34,19 +37,22 @@ class ChatRemoteDataSource : ChatService {
 
     override suspend fun sendMessage(messages: List<Message>, model: String): Flow<String> = flow {
         try {
+            val apiKey = settingsLocalDataSource.getApiKey()
+            val baseUrl = settingsLocalDataSource.getBaseUrl()
+            val client = createClient()
             client.sse(
                 {
-                    url("$BASE_URL/chat/completions")
+                    url("$baseUrl/chat/completions")
                     method = HttpMethod.Post
                     header("Content-Type", "application/json")
-                    header("Authorization", "Bearer $API_KEY")
+                    header("Authorization", "Bearer $apiKey")
                     setBody(createChatRequest(messages, model))
                 }
             ) {
                 incoming.collect { event ->
                     val data = event.data ?: return@collect
                     if (data == "[DONE]") return@collect
-                    
+
                     try {
                         val chunk = json.decodeFromString<ChatCompletionChunk>(data)
                         val content = chunk.choices.firstOrNull()?.delta?.content

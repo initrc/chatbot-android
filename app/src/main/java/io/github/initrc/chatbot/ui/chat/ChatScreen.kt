@@ -8,23 +8,31 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -44,6 +52,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -68,7 +77,21 @@ fun ChatScreen(
     val chatState by chatViewModel.chatState.collectAsStateWithLifecycle()
     val currentModel by settingsViewModel.currentModel.collectAsStateWithLifecycle()
     val allModels by settingsViewModel.allModels.collectAsStateWithLifecycle()
-    ChatScreen(messages, chatState, chatViewModel::onSendClick, currentModel, allModels, settingsViewModel::setCurrentModel, modifier)
+    val apiKey by settingsViewModel.apiKey.collectAsStateWithLifecycle()
+    val baseUrl by settingsViewModel.baseUrl.collectAsStateWithLifecycle()
+    ChatScreen(
+        messages = messages,
+        chatState = chatState,
+        onSendClick = chatViewModel::onSendClick,
+        currentModel = currentModel,
+        allModels = allModels,
+        onModelSelect = settingsViewModel::setCurrentModel,
+        apiKey = apiKey,
+        baseUrl = baseUrl,
+        onApiKeyChange = settingsViewModel::setApiKey,
+        onBaseUrlChange = settingsViewModel::setBaseUrl,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -79,6 +102,10 @@ private fun ChatScreen(
     currentModel: String,
     allModels: List<String>,
     onModelSelect: (String) -> Unit,
+    apiKey: String,
+    baseUrl: String,
+    onApiKeyChange: (String) -> Unit,
+    onBaseUrlChange: (String) -> Unit,
     modifier: Modifier
 ) {
     var sendViewHeight by remember { mutableStateOf(0.dp) }
@@ -89,6 +116,10 @@ private fun ChatScreen(
             currentModel = currentModel,
             allModels = allModels,
             onModelSelect = onModelSelect,
+            apiKey = apiKey,
+            baseUrl = baseUrl,
+            onApiKeyChange = onApiKeyChange,
+            onBaseUrlChange = onBaseUrlChange,
             modifier = Modifier.fillMaxWidth().height(56.dp)
         )
         Box(
@@ -124,28 +155,64 @@ fun ModelHeader(
     currentModel: String,
     allModels: List<String>,
     onModelSelect: (String) -> Unit,
+    apiKey: String,
+    baseUrl: String,
+    onApiKeyChange: (String) -> Unit,
+    onBaseUrlChange: (String) -> Unit,
     modifier: Modifier,
 ) {
-    var showBottomSheet by remember { mutableStateOf(false) }
+    var showModelBottomSheet by remember { mutableStateOf(false) }
+    var showApiBottomSheet by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     val sortedModels = remember(allModels) { allModels.sorted() }
 
-    Row(
-        modifier = modifier
-            .clickable { showBottomSheet = true },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "$currentModel ▾",
-            style = MaterialTheme.typography.titleMedium,
-        )
+        TextButton(
+            onClick = { showModelBottomSheet = true },
+            modifier = Modifier.height(48.dp)
+        ) {
+            Text(
+                text = "$currentModel ▾",
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+
+        Box(
+           modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            IconButton(
+                onClick = { showMenu = true },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Text(
+                    text = "⋮",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Set up API") },
+                    onClick = {
+                        showMenu = false
+                        showApiBottomSheet = true
+                    },
+                )
+            }
+        }
+
     }
 
-    if (showBottomSheet) {
+    if (showModelBottomSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
+            onDismissRequest = { showModelBottomSheet = false },
             sheetState = sheetState,
         ) {
             LazyColumn(
@@ -159,7 +226,6 @@ fun ModelHeader(
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-
                     )
                 }
                 items(sortedModels) { model ->
@@ -170,7 +236,7 @@ fun ModelHeader(
                                 scope.launch {
                                     onModelSelect(model)
                                     sheetState.hide()
-                                    showBottomSheet = false
+                                    showModelBottomSheet = false
                                 }
                             }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -192,6 +258,62 @@ fun ModelHeader(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showApiBottomSheet) {
+        var tempApiKey by remember { mutableStateOf(apiKey) }
+        var tempBaseUrl by remember { mutableStateOf(baseUrl) }
+
+        ModalBottomSheet(
+            onDismissRequest = { showApiBottomSheet = false },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Set up API",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                )
+                OutlinedTextField(
+                    value = tempBaseUrl,
+                    onValueChange = { tempBaseUrl = it },
+                    label = { Text("Base URL") },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = tempApiKey,
+                    onValueChange = { tempApiKey = it },
+                    label = { Text("API Key") },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    singleLine = true,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        onClick = { showApiBottomSheet = false },
+                    ) {
+                        Text("Cancel")
+                    }
+                    TextButton(
+                        onClick = {
+                            onApiKeyChange(tempApiKey)
+                            onBaseUrlChange(tempBaseUrl)
+                            showApiBottomSheet = false
+                        },
+                    ) {
+                        Text("Save")
                     }
                 }
             }
@@ -357,6 +479,10 @@ fun ChatScreenPreview() {
                 currentModel = "llama-3.1-8b-instant",
                 allModels = listOf("llama-3.1-8b-instant"),
                 onModelSelect = {},
+                apiKey = "",
+                baseUrl = "https://api.groq.com/openai/v1",
+                onApiKeyChange = {},
+                onBaseUrlChange = {},
                 modifier = Modifier,
             )
         }

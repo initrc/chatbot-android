@@ -18,4 +18,20 @@ class SettingsRepository @Inject constructor(
     suspend fun setCurrentModel(model: String) {
         localDataSource.setCurrentModel(model)
     }
+
+    suspend fun getApiKey(): String {
+        return localDataSource.getApiKey()
+    }
+
+    suspend fun setApiKey(key: String) {
+        localDataSource.setApiKey(key)
+    }
+
+    suspend fun getBaseUrl(): String {
+        return localDataSource.getBaseUrl()
+    }
+
+    suspend fun setBaseUrl(url: String) {
+        localDataSource.setBaseUrl(url)
+    }
 }

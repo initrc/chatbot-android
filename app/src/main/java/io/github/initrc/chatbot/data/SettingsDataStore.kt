@@ -19,7 +19,10 @@ class SettingsDataStore @Inject constructor(
 ) {
     private val dataStore = context.dataStore
     private val currentModelKey = stringPreferencesKey("current_model")
+    private val apiKeyKey = stringPreferencesKey("api_key")
+    private val baseUrlKey = stringPreferencesKey("base_url")
     private val defaultModel = "llama-3.1-8b-instant"
+    private val defaultBaseUrl = "https://api.groq.com/openai/v1"
 
     suspend fun getCurrentModel(): String {
         return dataStore.data.first()[currentModelKey] ?: defaultModel
@@ -28,6 +31,26 @@ class SettingsDataStore @Inject constructor(
     suspend fun setCurrentModel(model: String) {
         dataStore.edit { prefs ->
             prefs[currentModelKey] = model
+        }
+    }
+
+    suspend fun getApiKey(): String {
+        return dataStore.data.first()[apiKeyKey] ?: ""
+    }
+
+    suspend fun setApiKey(key: String) {
+        dataStore.edit { prefs ->
+            prefs[apiKeyKey] = key
+        }
+    }
+
+    suspend fun getBaseUrl(): String {
+        return dataStore.data.first()[baseUrlKey] ?: defaultBaseUrl
+    }
+
+    suspend fun setBaseUrl(url: String) {
+        dataStore.edit { prefs ->
+            prefs[baseUrlKey] = url
         }
     }
 }

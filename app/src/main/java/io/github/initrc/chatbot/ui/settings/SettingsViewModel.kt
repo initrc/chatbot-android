@@ -19,8 +19,16 @@ class SettingsViewModel @Inject constructor(
     private val _allModels = MutableStateFlow(listOf<String>())
     val allModels: StateFlow<List<String>> = _allModels
 
+    private val _apiKey = MutableStateFlow("")
+    val apiKey: StateFlow<String> = _apiKey
+
+    private val _baseUrl = MutableStateFlow("")
+    val baseUrl: StateFlow<String> = _baseUrl
+
     init {
         viewModelScope.launch {
+            _apiKey.value = settingsRepository.getApiKey()
+            _baseUrl.value = settingsRepository.getBaseUrl()
             _allModels.value = settingsRepository.getAllModels()
             _currentModel.value = settingsRepository.getCurrentModel()
         }
@@ -30,6 +38,20 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setCurrentModel(model)
             _currentModel.value = model
+        }
+    }
+
+    fun setApiKey(key: String) {
+        viewModelScope.launch {
+            settingsRepository.setApiKey(key)
+            _apiKey.value = key
+        }
+    }
+
+    fun setBaseUrl(url: String) {
+        viewModelScope.launch {
+            settingsRepository.setBaseUrl(url)
+            _baseUrl.value = url
         }
     }
 }

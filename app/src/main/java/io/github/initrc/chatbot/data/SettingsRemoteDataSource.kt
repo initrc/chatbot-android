@@ -12,11 +12,10 @@ import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val BASE_URL = "https://api.groq.com/openai/v1"
-private const val API_KEY = ""
-
 @Singleton
-class SettingsRemoteDataSource @Inject constructor() {
+class SettingsRemoteDataSource @Inject constructor(
+    private val settingsLocalDataSource: SettingsLocalDataSource
+) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -27,8 +26,10 @@ class SettingsRemoteDataSource @Inject constructor() {
     }
 
     suspend fun getAllModels(): List<String> {
-        val response: ModelsResponse = client.get("$BASE_URL/models") {
-            header("Authorization", "Bearer $API_KEY")
+        val apiKey = settingsLocalDataSource.getApiKey()
+        val baseUrl = settingsLocalDataSource.getBaseUrl()
+        val response: ModelsResponse = client.get("$baseUrl/models") {
+            header("Authorization", "Bearer $apiKey")
         }.body()
         return response.data.map { it.id }
     }
