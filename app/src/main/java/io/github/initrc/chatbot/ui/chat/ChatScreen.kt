@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,7 +39,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -48,16 +48,20 @@ import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.ChatRole
 import io.github.initrc.chatbot.data.Message
 import io.github.initrc.chatbot.ui.common.CircleIconButton
+import io.github.initrc.chatbot.ui.settings.SettingsViewModel
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
 @Composable
 fun ChatScreen(
     chatViewModel: ChatViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
     modifier: Modifier
 ) {
     val messages by chatViewModel.messages.collectAsStateWithLifecycle()
     val chatState by chatViewModel.chatState.collectAsStateWithLifecycle()
-    ChatScreen(messages, chatState, chatViewModel::onSendClick, modifier)
+    val currentModel by settingsViewModel.currentModel.collectAsStateWithLifecycle()
+    val allModels by settingsViewModel.allModels.collectAsStateWithLifecycle()
+    ChatScreen(messages, chatState, chatViewModel::onSendClick, currentModel, allModels, modifier)
 }
 
 @Composable
@@ -65,36 +69,61 @@ private fun ChatScreen(
     messages: List<Message>,
     chatState: ChatState,
     onSendClick: (String) -> Unit,
+    currentModel: String,
+    allModels: List<String>,
     modifier: Modifier
 ) {
     var sendViewHeight by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding()
-            .padding(all = 16.dp)
-    ) {
-        MessageList(
-            messages = messages,
-            modifier = Modifier.fillMaxSize(),
-            bottomContentPadding = sendViewHeight + 8.dp
+    Column(modifier = modifier.fillMaxSize()) {
+        ModelHeader(
+            currentModel = currentModel,
+            allModels = allModels,
+            modifier = Modifier.fillMaxWidth().height(56.dp)
         )
-        SendView(
-            onSendClick = onSendClick,
-            isEnabled = chatState == ChatState.IDLE,
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
-                .onGloballyPositioned { coordinates ->
-                    sendViewHeight = with(density) { coordinates.size.height.toDp() }
-                }
-        )
+                .weight(1f)
+                .imePadding()
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+        ) {
+            MessageList(
+                messages = messages,
+                modifier = Modifier.fillMaxSize(),
+                bottomContentPadding = sendViewHeight + 8.dp
+            )
+            SendView(
+                onSendClick = onSendClick,
+                isEnabled = chatState == ChatState.IDLE,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 8.dp)
+                    .onGloballyPositioned { coordinates ->
+                        sendViewHeight = with(density) { coordinates.size.height.toDp() }
+                    }
+            )
+        }
     }
 }
 
+@Composable
+fun ModelHeader(
+    currentModel: String,
+    allModels: List<String>,
+    modifier: Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "$currentModel ▾"
+        )
+    }
+}
 @Composable
 fun MessageList(
     messages: List<Message>,
@@ -250,6 +279,8 @@ fun ChatScreenPreview() {
                 },
                 chatState = ChatState.IDLE,
                 onSendClick = {},
+                currentModel = "llama-3.1-8b-instant",
+                allModels = listOf("llama-3.1-8b-instant"),
                 modifier = Modifier,
             )
         }
