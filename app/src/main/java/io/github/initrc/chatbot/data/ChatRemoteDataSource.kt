@@ -19,7 +19,6 @@ import kotlinx.serialization.json.Json
 
 private const val BASE_URL = "https://api.groq.com/openai/v1"
 private const val API_KEY = ""
-private const val MODEL_NAME = "llama-3.1-8b-instant"
 private const val TAG = "ChatRemoteDataSource"
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -33,7 +32,7 @@ class ChatRemoteDataSource : ChatService {
         }
     }
 
-    override suspend fun sendMessage(messages: List<Message>): Flow<String> = flow {
+    override suspend fun sendMessage(messages: List<Message>, model: String): Flow<String> = flow {
         try {
             client.sse(
                 {
@@ -41,7 +40,7 @@ class ChatRemoteDataSource : ChatService {
                     method = HttpMethod.Post
                     header("Content-Type", "application/json")
                     header("Authorization", "Bearer $API_KEY")
-                    setBody(createChatRequest(messages))
+                    setBody(createChatRequest(messages, model))
                 }
             ) {
                 incoming.collect { event ->
@@ -65,8 +64,8 @@ class ChatRemoteDataSource : ChatService {
         }
     }
 
-    private fun createChatRequest(messages: List<Message>) = ChatRequest(
-        model = MODEL_NAME,
+    private fun createChatRequest(messages: List<Message>, model: String) = ChatRequest(
+        model = model,
         messages = listOf(
             Message(role = ChatRole.SYSTEM, content = "You are a helpful assistant.")
         ) + messages,

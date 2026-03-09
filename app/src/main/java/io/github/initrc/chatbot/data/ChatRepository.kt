@@ -7,7 +7,7 @@ class ChatRepository @Inject constructor() {
     private val localDataSource = ChatLocalDataSource()
     private val remoteDataSource = ChatRemoteDataSource()
 
-    suspend fun sendMessage(messages: List<Message>): Flow<String> {
-        return remoteDataSource.sendMessage(messages)
+    suspend fun sendMessage(messages: List<Message>, model: String): Flow<String> {
+        return remoteDataSource.sendMessage(messages, model)
     }
 }

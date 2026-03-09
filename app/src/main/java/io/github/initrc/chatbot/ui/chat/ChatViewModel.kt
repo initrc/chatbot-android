@@ -22,7 +22,7 @@ class ChatViewModel @Inject constructor(
     private val _chatState = MutableStateFlow(ChatState.IDLE)
     val chatState: StateFlow<ChatState> = _chatState
 
-    fun onSendClick(inputText: String) {
+    fun onSendClick(inputText: String, model: String) {
         val promptText = inputText.trim()
         _messages.value += Message(role = ChatRole.USER, content = promptText)
 
@@ -33,7 +33,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _chatState.value = ChatState.BUSY
-                chatRepository.sendMessage(_messages.value.dropLast(1))
+                chatRepository.sendMessage(_messages.value.dropLast(1), model)
                     .onCompletion {
                         _chatState.value = ChatState.IDLE
                     }

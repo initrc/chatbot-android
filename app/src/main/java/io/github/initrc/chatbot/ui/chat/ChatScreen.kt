@@ -68,7 +68,7 @@ fun ChatScreen(
 private fun ChatScreen(
     messages: List<Message>,
     chatState: ChatState,
-    onSendClick: (String) -> Unit,
+    onSendClick: (String, String) -> Unit,
     currentModel: String,
     allModels: List<String>,
     modifier: Modifier
@@ -96,6 +96,7 @@ private fun ChatScreen(
             SendView(
                 onSendClick = onSendClick,
                 isEnabled = chatState == ChatState.IDLE,
+                model = currentModel,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -209,8 +210,9 @@ fun MessageListPreview() {
 
 @Composable
 fun SendView(
-    onSendClick: (String) -> Unit,
+    onSendClick: (String, String) -> Unit,
     isEnabled: Boolean,
+    model: String,
     modifier: Modifier,
 ) {
     var text by rememberSaveable { mutableStateOf("") }
@@ -245,7 +247,7 @@ fun SendView(
             isEnabled = isEnabled,
             onClick = {
                 focusManager.clearFocus()
-                onSendClick(text)
+                onSendClick(text, model)
                 text = ""
             },
             modifier = Modifier.align(Alignment.CenterVertically).padding(end = 4.dp)
@@ -278,7 +280,7 @@ fun ChatScreenPreview() {
                     Message(role = ChatRole.ASSISTANT, content = "Text $index from bot")
                 },
                 chatState = ChatState.IDLE,
-                onSendClick = {},
+                onSendClick = { _: String, _: String -> },
                 currentModel = "llama-3.1-8b-instant",
                 allModels = listOf("llama-3.1-8b-instant"),
                 modifier = Modifier,
