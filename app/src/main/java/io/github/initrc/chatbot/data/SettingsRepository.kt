@@ -3,12 +3,12 @@ package io.github.initrc.chatbot.data
 import javax.inject.Inject
 
 class SettingsRepository @Inject constructor(
-    val localDataSource: SettingsLocalDataSource
+    private val localDataSource: SettingsLocalDataSource,
+    private val remoteDataSource: SettingsRemoteDataSource
 ) {
 
-    // TODO: https://console.groq.com/docs/api-reference#models-retrieve
     suspend fun getAllModels(): List<String> {
-        return localDataSource.getAllModels()
+        return remoteDataSource.getAllModels()
     }
 
     suspend fun getCurrentModel(): String {

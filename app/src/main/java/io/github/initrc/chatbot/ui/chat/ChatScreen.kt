@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -128,6 +129,7 @@ fun ModelHeader(
     var showBottomSheet by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
+    val sortedModels = remember(allModels) { allModels.sorted() }
 
     Row(
         modifier = modifier
@@ -146,17 +148,21 @@ fun ModelHeader(
             onDismissRequest = { showBottomSheet = false },
             sheetState = sheetState,
         ) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp)
             ) {
-                Text(
-                    text = "Select Model",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally)
-                )
-                allModels.forEach { model ->
+                item {
+                    Text(
+                        text = "Select Model",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+
+                    )
+                }
+                items(sortedModels) { model ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
