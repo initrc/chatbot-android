@@ -13,4 +13,8 @@ class SettingsLocalDataSource @Inject constructor(
     override suspend fun getCurrentModel(): String {
         return settingsDataStore.getCurrentModel()
     }
+
+    override suspend fun setCurrentModel(model: String) {
+        settingsDataStore.setCurrentModel(model)
+    }
 }

@@ -14,4 +14,8 @@ class SettingsRepository @Inject constructor(
     suspend fun getCurrentModel(): String {
         return localDataSource.getCurrentModel()
     }
+
+    suspend fun setCurrentModel(model: String) {
+        localDataSource.setCurrentModel(model)
+    }
 }

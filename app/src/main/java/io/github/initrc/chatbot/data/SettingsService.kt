@@ -5,4 +5,5 @@ import kotlinx.coroutines.flow.Flow
 interface SettingsService {
     suspend fun getAllModels(): List<String>
     suspend fun getCurrentModel(): String
+    suspend fun setCurrentModel(model: String)
 }

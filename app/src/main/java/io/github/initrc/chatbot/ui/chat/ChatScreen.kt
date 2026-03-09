@@ -2,6 +2,7 @@ package io.github.initrc.chatbot.ui.chat
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,17 +19,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +55,7 @@ import io.github.initrc.chatbot.data.Message
 import io.github.initrc.chatbot.ui.common.CircleIconButton
 import io.github.initrc.chatbot.ui.settings.SettingsViewModel
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(
@@ -61,7 +67,7 @@ fun ChatScreen(
     val chatState by chatViewModel.chatState.collectAsStateWithLifecycle()
     val currentModel by settingsViewModel.currentModel.collectAsStateWithLifecycle()
     val allModels by settingsViewModel.allModels.collectAsStateWithLifecycle()
-    ChatScreen(messages, chatState, chatViewModel::onSendClick, currentModel, allModels, modifier)
+    ChatScreen(messages, chatState, chatViewModel::onSendClick, currentModel, allModels, settingsViewModel::setCurrentModel, modifier)
 }
 
 @Composable
@@ -71,6 +77,7 @@ private fun ChatScreen(
     onSendClick: (String, String) -> Unit,
     currentModel: String,
     allModels: List<String>,
+    onModelSelect: (String) -> Unit,
     modifier: Modifier
 ) {
     var sendViewHeight by remember { mutableStateOf(0.dp) }
@@ -80,6 +87,7 @@ private fun ChatScreen(
         ModelHeader(
             currentModel = currentModel,
             allModels = allModels,
+            onModelSelect = onModelSelect,
             modifier = Modifier.fillMaxWidth().height(56.dp)
         )
         Box(
@@ -109,20 +117,79 @@ private fun ChatScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelHeader(
     currentModel: String,
     allModels: List<String>,
+    onModelSelect: (String) -> Unit,
     modifier: Modifier,
 ) {
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState()
+
     Row(
-        modifier = modifier,
+        modifier = modifier
+            .clickable { showBottomSheet = true },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "$currentModel ▾"
+            text = "$currentModel ▾",
+            style = MaterialTheme.typography.titleMedium,
         )
+    }
+
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = "Select Model",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally)
+                )
+                allModels.forEach { model ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                scope.launch {
+                                    onModelSelect(model)
+                                    sheetState.hide()
+                                    showBottomSheet = false
+                                }
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        Text(
+                            text = model,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (model == currentModel) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (model == currentModel) {
+                            Text(
+                                text = "✓",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 @Composable
@@ -283,6 +350,7 @@ fun ChatScreenPreview() {
                 onSendClick = { _: String, _: String -> },
                 currentModel = "llama-3.1-8b-instant",
                 allModels = listOf("llama-3.1-8b-instant"),
+                onModelSelect = {},
                 modifier = Modifier,
             )
         }

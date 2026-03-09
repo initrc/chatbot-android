@@ -21,7 +21,15 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            _allModels.value = settingsRepository.getAllModels()
             _currentModel.value = settingsRepository.getCurrentModel()
+        }
+    }
+
+    fun setCurrentModel(model: String) {
+        viewModelScope.launch {
+            settingsRepository.setCurrentModel(model)
+            _currentModel.value = model
         }
     }
 }
