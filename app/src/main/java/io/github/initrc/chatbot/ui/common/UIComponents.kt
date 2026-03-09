@@ -35,9 +35,9 @@ fun CircleIconButton(
             .padding(all = 6.dp)
             .background(
                 color = if (isEnabled) {
-                    MaterialTheme.colorScheme.primaryContainer
+                    MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.surfaceContainer
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                 },
                 shape = CircleShape
             ),

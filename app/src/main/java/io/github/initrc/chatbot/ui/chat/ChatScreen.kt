@@ -412,6 +412,7 @@ fun SendView(
 ) {
     var text by rememberSaveable { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
+    val isEnabled = isEnabled && text.isNotEmpty()
 
     Row(
         modifier = modifier
@@ -449,6 +450,11 @@ fun SendView(
         ) {
             Icon(
                 painter = painterResource(R.drawable.send_24),
+                tint = if (isEnabled) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                },
                 contentDescription = "Send",
             )
         }
