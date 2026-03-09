@@ -2,14 +2,17 @@ package io.github.initrc.chatbot.ui.chat
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -32,17 +35,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.initrc.chatbot.R
-import io.github.initrc.chatbot.data.Message
 import io.github.initrc.chatbot.data.ChatRole
+import io.github.initrc.chatbot.data.Message
 import io.github.initrc.chatbot.ui.common.CircleIconButton
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
@@ -70,7 +74,7 @@ private fun ChatScreen(
         modifier = modifier
             .fillMaxSize()
             .imePadding()
-            .padding(all = 8.dp)
+            .padding(all = 16.dp)
     ) {
         MessageList(
             messages = messages,
@@ -100,12 +104,22 @@ fun MessageList(
     val listState = rememberLazyListState()
     LazyColumn(
         modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         state = listState,
     ) {
         items(
             items = messages
         ) { message ->
-            MessageView(message)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = if (message.isFromMe()) {
+                    Arrangement.End
+                } else {
+                    Arrangement.Start
+                },
+            ) {
+                MessageView(message)
+            }
         }
         item { Spacer(modifier = Modifier.height(bottomContentPadding)) }
     }
@@ -122,22 +136,19 @@ fun MessageView(message: Message) {
     val isFromMe = message.isFromMe()
     val modifier = if (isFromMe) {
         Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(28.dp))
+            .fillMaxWidth(0.8f)
+            .heightIn(min = 56.dp)
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(8.dp)
+            .padding(16.dp)
+            .wrapContentHeight(align = Alignment.CenterVertically)
     } else {
-        Modifier.padding(8.dp)
+        Modifier
     }
     Text(
         text = message.content,
         modifier = modifier,
-        style = if (isFromMe) {
-            MaterialTheme.typography.bodyMedium
-        } else {
-            MaterialTheme.typography.bodyLarge
-
-        },
+        style = MaterialTheme.typography.bodyLarge,
     )
 }
 
@@ -175,16 +186,20 @@ fun SendView(
 ) {
     var text by rememberSaveable { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
-    
-    Column(
+
+    Row(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(28.dp))
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .heightIn(min = 56.dp)
+            .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
         TextField(
             value = text,
             onValueChange = { text = it },
+            placeholder = {
+                Text(text = "Ask AI")
+            },
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
@@ -194,7 +209,8 @@ fun SendView(
                 disabledIndicatorColor = Color.Transparent,
                 errorIndicatorColor = Color.Transparent,
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.weight(1f),
+            maxLines = 5,
         )
         CircleIconButton(
             isEnabled = isEnabled,
@@ -203,9 +219,7 @@ fun SendView(
                 onSendClick(text)
                 text = ""
             },
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(bottom = 2.dp, end = 2.dp),
+            modifier = Modifier.align(Alignment.CenterVertically).padding(end = 4.dp)
         ) {
             Icon(
                 painter = painterResource(R.drawable.send_24),
