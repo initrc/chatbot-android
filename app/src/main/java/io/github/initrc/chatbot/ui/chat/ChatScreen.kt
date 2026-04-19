@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -39,6 +40,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,9 +51,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,6 +63,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
+import com.mikepenz.markdown.model.rememberMarkdownState
 import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.ChatRole
 import io.github.initrc.chatbot.data.Message
@@ -327,16 +334,28 @@ fun MessageList(
     bottomContentPadding: Dp = 0.dp
 ) {
     val listState = rememberLazyListState()
+    val lastMessageContent = messages.lastOrNull()?.content
+    var lastMessageHeight by remember { mutableIntStateOf(0) }
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
         state = listState,
     ) {
-        items(
+        itemsIndexed(
             items = messages
-        ) { message ->
+        ) { index, message ->
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (index == messages.lastIndex) {
+                            Modifier.onSizeChanged { size ->
+                                lastMessageHeight = size.height
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 horizontalArrangement = if (message.isFromMe()) {
                     Arrangement.End
                 } else {
@@ -349,9 +368,9 @@ fun MessageList(
         item { Spacer(modifier = Modifier.height(bottomContentPadding)) }
     }
 
-    LaunchedEffect(messages.size) {
+    LaunchedEffect(messages.size, lastMessageContent, lastMessageHeight) {
         if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size)
+            listState.scrollToItem(messages.size)
         }
     }
 }
@@ -370,12 +389,26 @@ fun MessageView(message: Message) {
     } else {
         Modifier
     }
-    Text(
-        text = message.content,
+    val markdownState = rememberMarkdownState(
+        content = message.content,
+        retainState = true,
+    )
+    Markdown(
+        markdownState = markdownState,
+        typography = chatMarkdownTypography(),
         modifier = modifier,
-        style = MaterialTheme.typography.bodyLarge,
     )
 }
+
+@Composable
+private fun chatMarkdownTypography() = markdownTypography(
+    h1 = MaterialTheme.typography.titleLarge,
+    h2 = MaterialTheme.typography.titleMedium,
+    h3 = MaterialTheme.typography.titleSmall,
+    h4 = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+    h5 = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+    h6 = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+)
 
 private fun Message.isFromMe(): Boolean = this.role == ChatRole.USER
 
@@ -394,8 +427,36 @@ fun MessageListPreview() {
         Surface {
             MessageList(
                 messages = listOf(
-                    Message(role = ChatRole.USER, content = "Text from me"),
-                    Message(role = ChatRole.ASSISTANT, content = "Text from bot")
+                    Message(
+                        role = ChatRole.USER,
+                        content = """
+                            **Can you summarize this Kotlin snippet?**
+
+                            ```kotlin
+                            val tokens = text.length / 4.0
+                            ```
+                        """.trimIndent()
+                    ),
+                    Message(
+                        role = ChatRole.ASSISTANT,
+                        content = """
+                            # Token estimate
+
+                            The snippet uses a rough character-based estimate.
+
+                            - `text.length` counts characters.
+                            - Dividing by `4.0` approximates tokens.
+                            - It is useful for quick budgeting, not exact accounting.
+
+                            > For precise counts, use a tokenizer for the target model.
+
+                            See the [Compose docs](https://developer.android.com/jetpack/compose).
+                        """.trimIndent()
+                    ),
+                    Message(
+                        role = ChatRole.USER,
+                        content = "Thanks. Also make **user markdown** render inside my bubble."
+                    ),
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
