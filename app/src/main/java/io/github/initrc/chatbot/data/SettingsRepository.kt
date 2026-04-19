@@ -11,6 +11,10 @@ class SettingsRepository @Inject constructor(
         return remoteDataSource.getAllModels()
     }
 
+    suspend fun getModelContextWindow(model: String): Int? {
+        return remoteDataSource.getModelContextWindow(model)
+    }
+
     suspend fun getCurrentModel(): String {
         return localDataSource.getCurrentModel()
     }
@@ -24,6 +28,9 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setApiKey(key: String) {
+        if (localDataSource.getApiKey() != key) {
+            remoteDataSource.clearModelCache()
+        }
         localDataSource.setApiKey(key)
     }
 
@@ -32,6 +39,9 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setBaseUrl(url: String) {
+        if (localDataSource.getBaseUrl() != url) {
+            remoteDataSource.clearModelCache()
+        }
         localDataSource.setBaseUrl(url)
     }
 }

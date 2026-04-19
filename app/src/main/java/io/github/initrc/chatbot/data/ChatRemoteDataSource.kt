@@ -35,7 +35,11 @@ class ChatRemoteDataSource @Inject constructor(
         }
     }
 
-    override suspend fun sendMessage(messages: List<Message>, model: String): Flow<String> = flow {
+    override suspend fun sendMessage(
+        messages: List<Message>,
+        model: String,
+        maxCompletionTokens: Int?,
+    ): Flow<String> = flow {
         try {
             val apiKey = settingsLocalDataSource.getApiKey()
             val baseUrl = settingsLocalDataSource.getBaseUrl()
@@ -46,7 +50,7 @@ class ChatRemoteDataSource @Inject constructor(
                     method = HttpMethod.Post
                     header("Content-Type", "application/json")
                     header("Authorization", "Bearer $apiKey")
-                    setBody(createChatRequest(messages, model))
+                    setBody(createChatRequest(messages, model, maxCompletionTokens))
                 }
             ) {
                 incoming.collect { event ->
@@ -70,12 +74,17 @@ class ChatRemoteDataSource @Inject constructor(
         }
     }
 
-    private fun createChatRequest(messages: List<Message>, model: String) = ChatRequest(
+    private fun createChatRequest(
+        messages: List<Message>,
+        model: String,
+        maxCompletionTokens: Int?,
+    ) = ChatRequest(
         model = model,
         messages = listOf(
-            Message(role = ChatRole.SYSTEM, content = "You are a helpful assistant.")
+            Message(role = ChatRole.SYSTEM, content = CHAT_SYSTEM_PROMPT)
         ) + messages,
         stream = true,
+        maxCompletionTokens = maxCompletionTokens,
     )
 }
 
@@ -83,7 +92,9 @@ class ChatRemoteDataSource @Inject constructor(
 data class ChatRequest(
     val model: String,
     val messages: List<Message>,
-    val stream: Boolean
+    val stream: Boolean,
+    @SerialName("max_completion_tokens")
+    val maxCompletionTokens: Int? = null,
 )
 
 @Serializable
