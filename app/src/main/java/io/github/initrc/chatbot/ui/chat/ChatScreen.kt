@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -56,14 +54,18 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mikepenz.markdown.compose.components.MarkdownComponents
+import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
+import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.elements.MarkdownCheckBox
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.rememberMarkdownState
 import io.github.initrc.chatbot.R
@@ -393,8 +395,10 @@ fun MessageView(message: Message) {
         content = message.content,
         retainState = true,
     )
+    val markdownComponents = rememberChatMarkdownComponents()
     Markdown(
         markdownState = markdownState,
+        components = markdownComponents,
         typography = chatMarkdownTypography(),
         modifier = modifier,
     )
@@ -409,6 +413,15 @@ private fun chatMarkdownTypography() = markdownTypography(
     h5 = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
     h6 = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
 )
+
+@Composable
+private fun rememberChatMarkdownComponents(): MarkdownComponents = remember {
+    markdownComponents(
+        codeBlock = highlightedCodeBlock,
+        codeFence = highlightedCodeFence,
+        checkbox = { MarkdownCheckBox(it.content, it.node, it.typography.text) },
+    )
+}
 
 private fun Message.isFromMe(): Boolean = this.role == ChatRole.USER
 

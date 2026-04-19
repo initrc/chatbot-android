@@ -41,6 +41,7 @@ ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-conte
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 markdown-renderer-m3 = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
+markdown-renderer-code = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-code", version.ref = "markdownRenderer" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
