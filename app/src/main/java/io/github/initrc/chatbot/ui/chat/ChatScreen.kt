@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -53,21 +52,12 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mikepenz.markdown.compose.components.MarkdownComponents
-import com.mikepenz.markdown.compose.components.markdownComponents
-import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
-import com.mikepenz.markdown.compose.elements.highlightedCodeFence
-import com.mikepenz.markdown.m3.Markdown
-import com.mikepenz.markdown.m3.elements.MarkdownCheckBox
-import com.mikepenz.markdown.m3.markdownTypography
-import com.mikepenz.markdown.model.rememberMarkdownState
 import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.ChatRole
 import io.github.initrc.chatbot.data.Message
@@ -379,48 +369,23 @@ fun MessageList(
 
 @Composable
 fun MessageView(message: Message) {
-    val isFromMe = message.isFromMe()
-    val modifier = if (isFromMe) {
-        Modifier
-            .clip(RoundedCornerShape(28.dp))
-            .fillMaxWidth(0.8f)
-            .heightIn(min = 56.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(16.dp)
-            .wrapContentHeight(align = Alignment.CenterVertically)
+    if (message.isFromMe()) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(28.dp))
+                .fillMaxWidth(0.8f)
+                .heightIn(min = 56.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(16.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            ChatMarkdown(content = message.content)
+        }
     } else {
-        Modifier
+        ChatMarkdown(
+            content = message.content,
+        )
     }
-    val markdownState = rememberMarkdownState(
-        content = message.content,
-        retainState = true,
-    )
-    val markdownComponents = rememberChatMarkdownComponents()
-    Markdown(
-        markdownState = markdownState,
-        components = markdownComponents,
-        typography = chatMarkdownTypography(),
-        modifier = modifier,
-    )
-}
-
-@Composable
-private fun chatMarkdownTypography() = markdownTypography(
-    h1 = MaterialTheme.typography.titleLarge,
-    h2 = MaterialTheme.typography.titleMedium,
-    h3 = MaterialTheme.typography.titleSmall,
-    h4 = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-    h5 = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-    h6 = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-)
-
-@Composable
-private fun rememberChatMarkdownComponents(): MarkdownComponents = remember {
-    markdownComponents(
-        codeBlock = highlightedCodeBlock,
-        codeFence = highlightedCodeFence,
-        checkbox = { MarkdownCheckBox(it.content, it.node, it.typography.text) },
-    )
 }
 
 private fun Message.isFromMe(): Boolean = this.role == ChatRole.USER
@@ -460,6 +425,10 @@ fun MessageListPreview() {
                             - `text.length` counts characters.
                             - Dividing by `4.0` approximates tokens.
                             - It is useful for quick budgeting, not exact accounting.
+
+                            ```text
+                            Estimated tokens: 7.5
+                            ```
 
                             > For precise counts, use a tokenizer for the target model.
 
