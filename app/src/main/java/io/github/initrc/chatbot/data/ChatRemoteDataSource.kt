@@ -104,10 +104,17 @@ data class Message(
 )
 
 @Serializable
-enum class ChatRole {
-    @SerialName("system") SYSTEM,
-    @SerialName("user") USER,
-    @SerialName("assistant") ASSISTANT,
+enum class ChatRole(val value: String) {
+    @SerialName("system") SYSTEM("system"),
+    @SerialName("user") USER("user"),
+    @SerialName("assistant") ASSISTANT("assistant");
+
+    companion object {
+        fun fromValue(value: String): ChatRole {
+            return entries.firstOrNull { it.value == value }
+                ?: error("Unknown chat role: $value")
+        }
+    }
 }
 
 @Serializable

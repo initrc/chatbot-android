@@ -62,9 +62,11 @@ interface ChatDao {
             updatedAtMillis = :updatedAtMillis,
             status = :status
         WHERE id = :messageId
+            AND conversationId = :conversationId
         """
     )
     suspend fun updateMessageContent(
+        conversationId: String,
         messageId: String,
         content: String,
         updatedAtMillis: Long,
