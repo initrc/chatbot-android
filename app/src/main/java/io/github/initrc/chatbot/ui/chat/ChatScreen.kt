@@ -1,6 +1,7 @@
 package io.github.initrc.chatbot.ui.chat
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,6 +32,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -64,10 +71,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.ChatRole
 import io.github.initrc.chatbot.data.Message
+import io.github.initrc.chatbot.data.db.ConversationSummary
 import io.github.initrc.chatbot.ui.common.CircleIconButton
 import io.github.initrc.chatbot.ui.settings.SettingsViewModel
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 import kotlinx.coroutines.launch
+
+private const val TAG = "ChatScreen"
 
 @Composable
 fun ChatScreen(
@@ -85,14 +95,19 @@ fun ChatScreen(
     val apiKey by settingsViewModel.apiKey.collectAsStateWithLifecycle()
     val baseUrl by settingsViewModel.baseUrl.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val pendingConversationDeletionIds = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
+    val visibleConversations = recentConversations.filterNot { conversation ->
+        pendingConversationDeletionIds.contains(conversation.id)
+    }
 
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
     }
 
     ConversationDrawerLayout(
-        recentConversations = recentConversations,
+        recentConversations = visibleConversations,
         selectedConversationId = conversationId,
         drawerState = drawerState,
         onNewChatClick = {
@@ -103,24 +118,94 @@ fun ChatScreen(
             chatViewModel.loadConversation(selectedConversationId)
             scope.launch { drawerState.close() }
         },
+        onConversationDeleteClick = { conversation ->
+            scope.launch {
+                handleConversationDeleteClick(
+                    conversation = conversation,
+                    chatViewModel = chatViewModel,
+                    conversationViewModel = conversationViewModel,
+                    drawerState = drawerState,
+                    snackbarHostState = snackbarHostState,
+                    pendingConversationDeletionIds = pendingConversationDeletionIds,
+                )
+            }
+        },
+        canDeleteConversation = { candidateConversationId ->
+            chatState == ChatState.IDLE || candidateConversationId != conversationId
+        },
         modifier = modifier,
     ) {
-        ChatScreenContent(
-            messages = messages,
-            chatState = chatState,
-            onConversationListClick = {
-                scope.launch { drawerState.open() }
-            },
-            onSendClick = chatViewModel::onSendClick,
-            currentModel = currentModel,
-            allModels = allModels,
-            onModelSelect = settingsViewModel::setCurrentModel,
-            apiKey = apiKey,
-            baseUrl = baseUrl,
-            onApiKeyChange = settingsViewModel::setApiKey,
-            onBaseUrlChange = settingsViewModel::setBaseUrl,
+        Box(
             modifier = Modifier.fillMaxSize(),
+        ) {
+            ChatScreenContent(
+                messages = messages,
+                chatState = chatState,
+                onConversationListClick = {
+                    scope.launch { drawerState.open() }
+                },
+                onSendClick = chatViewModel::onSendClick,
+                currentModel = currentModel,
+                allModels = allModels,
+                onModelSelect = settingsViewModel::setCurrentModel,
+                apiKey = apiKey,
+                baseUrl = baseUrl,
+                onApiKeyChange = settingsViewModel::setApiKey,
+                onBaseUrlChange = settingsViewModel::setBaseUrl,
+                modifier = Modifier.fillMaxSize(),
+            )
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+            )
+        }
+    }
+}
+
+private suspend fun handleConversationDeleteClick(
+    conversation: ConversationSummary,
+    chatViewModel: ChatViewModel,
+    conversationViewModel: ConversationViewModel,
+    drawerState: androidx.compose.material3.DrawerState,
+    snackbarHostState: SnackbarHostState,
+    pendingConversationDeletionIds: MutableList<String>,
+) {
+    val wasSelected = conversation.id == chatViewModel.conversationId.value
+    pendingConversationDeletionIds.add(conversation.id)
+    try {
+        if (wasSelected) {
+            chatViewModel.startNewChat()
+        }
+        drawerState.close()
+
+        val snackbarResult = snackbarHostState.showSnackbar(
+            message = "Conversation deleted",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Long,
         )
+
+        if (snackbarResult == SnackbarResult.ActionPerformed) {
+            if (wasSelected && chatViewModel.conversationId.value == null) {
+                chatViewModel.loadConversation(conversation.id)
+            }
+            return
+        }
+
+        val deleted = conversationViewModel.deleteConversation(conversation.id)
+        if (!deleted && wasSelected && chatViewModel.conversationId.value == null) {
+            Log.w(
+                TAG,
+                "Conversation delete affected 0 rows for id=${conversation.id}; restoring selection",
+            )
+            chatViewModel.loadConversation(conversation.id)
+        } else if (chatViewModel.conversationId.value == conversation.id) {
+            chatViewModel.startNewChat()
+        }
+    } finally {
+        pendingConversationDeletionIds.remove(conversation.id)
     }
 }
 

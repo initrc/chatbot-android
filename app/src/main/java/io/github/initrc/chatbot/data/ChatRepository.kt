@@ -28,6 +28,10 @@ class ChatRepository @Inject constructor(
         return historyLocalDataSource.createConversation(model).id
     }
 
+    suspend fun deleteConversation(conversationId: String): Boolean {
+        return historyLocalDataSource.deleteConversation(conversationId)
+    }
+
     suspend fun sendMessage(messages: List<Message>, model: String): Flow<String> {
         return sendCompressedMessages(messages, model)
     }

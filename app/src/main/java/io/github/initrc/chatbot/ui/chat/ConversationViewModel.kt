@@ -36,4 +36,8 @@ class ConversationViewModel @Inject constructor(
             conversation.id == conversationId
         }
     }
+
+    suspend fun deleteConversation(conversationId: String): Boolean {
+        return chatRepository.deleteConversation(conversationId)
+    }
 }

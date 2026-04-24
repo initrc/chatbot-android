@@ -1,6 +1,8 @@
 package io.github.initrc.chatbot.ui.chat
 
 import android.content.res.Configuration
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -23,13 +27,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +53,8 @@ fun ConversationDrawerLayout(
     drawerState: DrawerState,
     onNewChatClick: () -> Unit,
     onConversationClick: (String) -> Unit,
+    onConversationDeleteClick: (ConversationSummary) -> Unit,
+    canDeleteConversation: (String) -> Boolean,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -57,6 +67,8 @@ fun ConversationDrawerLayout(
                 selectedConversationId = selectedConversationId,
                 onNewChatClick = onNewChatClick,
                 onConversationClick = onConversationClick,
+                onConversationDeleteClick = onConversationDeleteClick,
+                canDeleteConversation = canDeleteConversation,
             )
         },
         content = content,
@@ -85,6 +97,8 @@ private fun ConversationDrawerSheet(
     selectedConversationId: String?,
     onNewChatClick: () -> Unit,
     onConversationClick: (String) -> Unit,
+    onConversationDeleteClick: (ConversationSummary) -> Unit,
+    canDeleteConversation: (String) -> Boolean,
 ) {
     ModalDrawerSheet(
         modifier = Modifier.widthIn(max = 360.dp),
@@ -124,12 +138,12 @@ private fun ConversationDrawerSheet(
                         items = recentConversations,
                         key = { conversation -> conversation.id },
                     ) { conversation ->
-                        NavigationDrawerItem(
+                        ConversationDrawerItem(
+                            conversation = conversation,
                             selected = conversation.id == selectedConversationId,
                             onClick = { onConversationClick(conversation.id) },
-                            label = {
-                                ConversationDrawerItemLabel(conversation)
-                            },
+                            onDeleteClick = { onConversationDeleteClick(conversation) },
+                            canDelete = canDeleteConversation(conversation.id),
                         )
                     }
                 }
@@ -151,6 +165,58 @@ private fun ConversationDrawerSheet(
                     .navigationBarsPadding()
                     .padding(16.dp)
                     .height(56.dp),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ConversationDrawerItem(
+    conversation: ConversationSummary,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    canDelete: Boolean,
+) {
+    var showMenu by remember(conversation.id) { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Surface(
+            color = if (selected) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
+                Color.Transparent
+            },
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = { showMenu = true },
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                ConversationDrawerItemLabel(conversation)
+            }
+        }
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                enabled = canDelete,
+                onClick = {
+                    showMenu = false
+                    onDeleteClick()
+                },
             )
         }
     }
@@ -216,6 +282,8 @@ private fun ConversationDrawerPreview() {
                 drawerState = rememberDrawerState(initialValue = DrawerValue.Open),
                 onNewChatClick = {},
                 onConversationClick = {},
+                onConversationDeleteClick = {},
+                canDeleteConversation = { true },
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {}
             }
