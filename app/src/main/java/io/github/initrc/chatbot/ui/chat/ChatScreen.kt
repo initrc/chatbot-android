@@ -1,6 +1,7 @@
 package io.github.initrc.chatbot.ui.chat
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,34 +72,63 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(
     chatViewModel: ChatViewModel = hiltViewModel(),
+    conversationViewModel: ConversationViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     modifier: Modifier
 ) {
     val messages by chatViewModel.messages.collectAsStateWithLifecycle()
     val chatState by chatViewModel.chatState.collectAsStateWithLifecycle()
+    val conversationId by chatViewModel.conversationId.collectAsStateWithLifecycle()
+    val recentConversations by conversationViewModel.recentConversations.collectAsStateWithLifecycle()
     val currentModel by settingsViewModel.currentModel.collectAsStateWithLifecycle()
     val allModels by settingsViewModel.allModels.collectAsStateWithLifecycle()
     val apiKey by settingsViewModel.apiKey.collectAsStateWithLifecycle()
     val baseUrl by settingsViewModel.baseUrl.collectAsStateWithLifecycle()
-    ChatScreen(
-        messages = messages,
-        chatState = chatState,
-        onSendClick = chatViewModel::onSendClick,
-        currentModel = currentModel,
-        allModels = allModels,
-        onModelSelect = settingsViewModel::setCurrentModel,
-        apiKey = apiKey,
-        baseUrl = baseUrl,
-        onApiKeyChange = settingsViewModel::setApiKey,
-        onBaseUrlChange = settingsViewModel::setBaseUrl,
-        modifier = modifier
-    )
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    BackHandler(enabled = drawerState.isOpen) {
+        scope.launch { drawerState.close() }
+    }
+
+    ConversationDrawerLayout(
+        recentConversations = recentConversations,
+        selectedConversationId = conversationId,
+        drawerState = drawerState,
+        onNewChatClick = {
+            chatViewModel.startNewChat()
+            scope.launch { drawerState.close() }
+        },
+        onConversationClick = { selectedConversationId ->
+            chatViewModel.loadConversation(selectedConversationId)
+            scope.launch { drawerState.close() }
+        },
+        modifier = modifier,
+    ) {
+        ChatScreenContent(
+            messages = messages,
+            chatState = chatState,
+            onConversationListClick = {
+                scope.launch { drawerState.open() }
+            },
+            onSendClick = chatViewModel::onSendClick,
+            currentModel = currentModel,
+            allModels = allModels,
+            onModelSelect = settingsViewModel::setCurrentModel,
+            apiKey = apiKey,
+            baseUrl = baseUrl,
+            onApiKeyChange = settingsViewModel::setApiKey,
+            onBaseUrlChange = settingsViewModel::setBaseUrl,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 
 @Composable
-private fun ChatScreen(
+private fun ChatScreenContent(
     messages: List<Message>,
     chatState: ChatState,
+    onConversationListClick: () -> Unit,
     onSendClick: (String, String) -> Unit,
     currentModel: String,
     allModels: List<String>,
@@ -112,6 +144,7 @@ private fun ChatScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         ModelHeader(
+            onConversationListClick = onConversationListClick,
             currentModel = currentModel,
             allModels = allModels,
             onModelSelect = onModelSelect,
@@ -151,6 +184,7 @@ private fun ChatScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelHeader(
+    onConversationListClick: () -> Unit,
     currentModel: String,
     allModels: List<String>,
     onModelSelect: (String) -> Unit,
@@ -171,6 +205,11 @@ fun ModelHeader(
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
+        ConversationDrawerButton(
+            onClick = onConversationListClick,
+            modifier = Modifier.align(Alignment.CenterStart),
+        )
+
         TextButton(
             onClick = { showModelBottomSheet = true },
             modifier = Modifier.height(48.dp)
@@ -517,13 +556,14 @@ fun SendView(
 fun ChatScreenPreview() {
     ChatbotTheme {
         Surface {
-            ChatScreen(
+            ChatScreenContent(
                 messages = listOf(
                     Message(role = ChatRole.USER, content = "Text from me"),
                 ) + List(30) { index ->
                     Message(role = ChatRole.ASSISTANT, content = "Text $index from bot")
                 },
                 chatState = ChatState.IDLE,
+                onConversationListClick = {},
                 onSendClick = { _: String, _: String -> },
                 currentModel = "llama-3.1-8b-instant",
                 allModels = listOf("llama-3.1-8b-instant"),
