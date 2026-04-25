@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 // 24dp icon in a 36dp circle wrapped with 6dp padding to achieve a 48dp touch target
 @Composable
 fun CircleIconButton(
-    isEnabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier,
     content: @Composable () -> Unit,
@@ -27,23 +26,17 @@ fun CircleIconButton(
         modifier = modifier
             .size(48.dp)
             .clickable(
-                enabled = isEnabled,
                 onClick = { onClick() },
                 indication = ripple(bounded = false, radius = 18.dp),
-                interactionSource = remember { MutableInteractionSource() }
+                interactionSource = remember { MutableInteractionSource() },
             )
             .padding(all = 6.dp)
             .background(
-                color = if (isEnabled) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                },
-                shape = CircleShape
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = CircleShape,
             ),
         contentAlignment = Alignment.Center,
     ) {
         content()
     }
-
 }

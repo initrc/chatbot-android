@@ -606,24 +606,23 @@ fun SendView(
             modifier = Modifier.weight(1f),
             maxLines = 5,
         )
-        CircleIconButton(
-            isEnabled = isEnabled,
-            onClick = {
-                focusManager.clearFocus()
-                onSendClick(text, model)
-                text = ""
-            },
-            modifier = Modifier.align(Alignment.CenterVertically).padding(end = 4.dp)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.send_24),
-                tint = if (isEnabled) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+        if (isEnabled) {
+            CircleIconButton(
+                onClick = {
+                    focusManager.clearFocus()
+                    onSendClick(text, model)
+                    text = ""
                 },
-                contentDescription = "Send",
-            )
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(end = 4.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.send_24),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    contentDescription = "Send",
+                )
+            }
         }
     }
 }
