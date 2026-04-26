@@ -40,7 +40,7 @@ class SettingsDataStore @Inject constructor(
 
     suspend fun setApiKey(key: String) {
         dataStore.edit { prefs ->
-            prefs[apiKeyKey] = key
+            prefs[apiKeyKey] = key.trim()
         }
     }
 
@@ -50,7 +50,7 @@ class SettingsDataStore @Inject constructor(
 
     suspend fun setBaseUrl(url: String) {
         dataStore.edit { prefs ->
-            prefs[baseUrlKey] = url
+            prefs[baseUrlKey] = url.trim()
         }
     }
 }

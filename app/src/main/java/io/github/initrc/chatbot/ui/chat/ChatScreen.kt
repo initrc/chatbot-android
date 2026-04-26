@@ -151,8 +151,7 @@ fun ChatScreen(
                 onModelSelect = settingsViewModel::setCurrentModel,
                 apiKey = apiKey,
                 baseUrl = baseUrl,
-                onApiKeyChange = settingsViewModel::setApiKey,
-                onBaseUrlChange = settingsViewModel::setBaseUrl,
+                onApiSettingsChange = settingsViewModel::setApiSettings,
                 modifier = Modifier.fillMaxSize(),
             )
             SnackbarHost(
@@ -221,8 +220,7 @@ private fun ChatScreenContent(
     onModelSelect: (String) -> Unit,
     apiKey: String,
     baseUrl: String,
-    onApiKeyChange: (String) -> Unit,
-    onBaseUrlChange: (String) -> Unit,
+    onApiSettingsChange: (String, String) -> Unit,
     modifier: Modifier
 ) {
     var sendViewHeight by remember { mutableStateOf(0.dp) }
@@ -236,8 +234,7 @@ private fun ChatScreenContent(
             onModelSelect = onModelSelect,
             apiKey = apiKey,
             baseUrl = baseUrl,
-            onApiKeyChange = onApiKeyChange,
-            onBaseUrlChange = onBaseUrlChange,
+            onApiSettingsChange = onApiSettingsChange,
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
@@ -256,7 +253,9 @@ private fun ChatScreenContent(
             )
             SendView(
                 onSendClick = onSendClick,
-                isEnabled = chatState == ChatState.IDLE,
+                isEnabled = chatState == ChatState.IDLE &&
+                    apiKey.isNotBlank() &&
+                    baseUrl.isNotBlank(),
                 model = currentModel,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -279,8 +278,7 @@ fun ModelHeader(
     onModelSelect: (String) -> Unit,
     apiKey: String,
     baseUrl: String,
-    onApiKeyChange: (String) -> Unit,
-    onBaseUrlChange: (String) -> Unit,
+    onApiSettingsChange: (String, String) -> Unit,
     modifier: Modifier,
 ) {
     var showModelBottomSheet by remember { mutableStateOf(false) }
@@ -435,8 +433,7 @@ fun ModelHeader(
                     }
                     TextButton(
                         onClick = {
-                            onApiKeyChange(tempApiKey)
-                            onBaseUrlChange(tempBaseUrl)
+                            onApiSettingsChange(tempApiKey, tempBaseUrl)
                             showApiBottomSheet = false
                         },
                     ) {
@@ -658,8 +655,7 @@ fun ChatScreenPreview() {
                 onModelSelect = {},
                 apiKey = "",
                 baseUrl = "https://api.groq.com/openai/v1",
-                onApiKeyChange = {},
-                onBaseUrlChange = {},
+                onApiSettingsChange = { _: String, _: String -> },
                 modifier = Modifier,
             )
         }

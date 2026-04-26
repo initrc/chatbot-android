@@ -43,6 +43,7 @@ class ChatRemoteDataSource @Inject constructor(
         try {
             val apiKey = settingsLocalDataSource.getApiKey()
             val baseUrl = settingsLocalDataSource.getBaseUrl()
+
             val client = createClient()
             client.sse(
                 {

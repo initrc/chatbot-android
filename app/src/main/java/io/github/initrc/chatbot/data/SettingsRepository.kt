@@ -8,11 +8,18 @@ class SettingsRepository @Inject constructor(
 ) {
 
     suspend fun getAllModels(): List<String> {
+        if (!hasApiSettings()) return emptyList()
         return remoteDataSource.getAllModels()
     }
 
     suspend fun getModelContextWindow(model: String): Int? {
+        if (!hasApiSettings()) return null
         return remoteDataSource.getModelContextWindow(model)
+    }
+
+    suspend fun hasApiSettings(): Boolean {
+        return localDataSource.getApiKey().isNotBlank() &&
+            localDataSource.getBaseUrl().isNotBlank()
     }
 
     suspend fun getCurrentModel(): String {
@@ -28,10 +35,11 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setApiKey(key: String) {
-        if (localDataSource.getApiKey() != key) {
+        val trimmedKey = key.trim()
+        if (localDataSource.getApiKey() != trimmedKey) {
             remoteDataSource.clearModelCache()
         }
-        localDataSource.setApiKey(key)
+        localDataSource.setApiKey(trimmedKey)
     }
 
     suspend fun getBaseUrl(): String {
@@ -39,9 +47,23 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setBaseUrl(url: String) {
-        if (localDataSource.getBaseUrl() != url) {
+        val trimmedUrl = url.trim()
+        if (localDataSource.getBaseUrl() != trimmedUrl) {
             remoteDataSource.clearModelCache()
         }
-        localDataSource.setBaseUrl(url)
+        localDataSource.setBaseUrl(trimmedUrl)
+    }
+
+    suspend fun setApiSettings(apiKey: String, baseUrl: String) {
+        val trimmedApiKey = apiKey.trim()
+        val trimmedBaseUrl = baseUrl.trim()
+        if (
+            localDataSource.getApiKey() != trimmedApiKey ||
+            localDataSource.getBaseUrl() != trimmedBaseUrl
+        ) {
+            remoteDataSource.clearModelCache()
+        }
+        localDataSource.setApiKey(trimmedApiKey)
+        localDataSource.setBaseUrl(trimmedBaseUrl)
     }
 }

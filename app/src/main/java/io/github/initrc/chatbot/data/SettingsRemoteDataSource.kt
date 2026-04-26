@@ -32,6 +32,7 @@ class SettingsRemoteDataSource @Inject constructor(
     suspend fun getAllModels(): List<String> {
         val apiKey = settingsLocalDataSource.getApiKey()
         val baseUrl = settingsLocalDataSource.getBaseUrl()
+
         val response: ModelsResponse = client.get("$baseUrl/models") {
             header("Authorization", "Bearer $apiKey")
         }.body()
@@ -43,9 +44,10 @@ class SettingsRemoteDataSource @Inject constructor(
     suspend fun getModelContextWindow(modelId: String): Int? {
         modelCache[modelId]?.contextWindow?.let { return it }
 
+        val apiKey = settingsLocalDataSource.getApiKey()
+        val baseUrl = settingsLocalDataSource.getBaseUrl()
+
         return runCatching {
-            val apiKey = settingsLocalDataSource.getApiKey()
-            val baseUrl = settingsLocalDataSource.getBaseUrl()
             val response: Model = client.get("$baseUrl/models/${modelId.asPathSegment()}") {
                 header("Authorization", "Bearer $apiKey")
             }.body()

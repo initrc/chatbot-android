@@ -45,6 +45,9 @@ class ChatRepository @Inject constructor(
         if (promptText.isEmpty()) {
             return emptyFlow()
         }
+        if (!settingsRepository.hasApiSettings()) {
+            return emptyFlow()
+        }
 
         return flow {
             historyLocalDataSource.appendMessage(
@@ -103,6 +106,10 @@ class ChatRepository @Inject constructor(
         messages: List<Message>,
         model: String,
     ): Flow<String> {
+        if (!settingsRepository.hasApiSettings()) {
+            return emptyFlow()
+        }
+
         val contextWindow = settingsRepository.getModelContextWindow(model)
         val compressedMessages = contextCompressor.compress(messages, contextWindow)
         return remoteDataSource.sendMessage(

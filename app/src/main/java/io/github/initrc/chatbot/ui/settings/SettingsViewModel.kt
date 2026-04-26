@@ -29,8 +29,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _apiKey.value = settingsRepository.getApiKey()
             _baseUrl.value = settingsRepository.getBaseUrl()
-            _allModels.value = settingsRepository.getAllModels()
             _currentModel.value = settingsRepository.getCurrentModel()
+            refreshModels()
         }
     }
 
@@ -44,14 +44,34 @@ class SettingsViewModel @Inject constructor(
     fun setApiKey(key: String) {
         viewModelScope.launch {
             settingsRepository.setApiKey(key)
-            _apiKey.value = key
+            _apiKey.value = settingsRepository.getApiKey()
+            refreshModels()
         }
     }
 
     fun setBaseUrl(url: String) {
         viewModelScope.launch {
             settingsRepository.setBaseUrl(url)
-            _baseUrl.value = url
+            _baseUrl.value = settingsRepository.getBaseUrl()
+            refreshModels()
+        }
+    }
+
+    fun setApiSettings(apiKey: String, baseUrl: String) {
+        viewModelScope.launch {
+            settingsRepository.setApiSettings(apiKey, baseUrl)
+            _apiKey.value = settingsRepository.getApiKey()
+            _baseUrl.value = settingsRepository.getBaseUrl()
+            refreshModels()
+        }
+    }
+
+    private suspend fun refreshModels() {
+        _allModels.value = if (!settingsRepository.hasApiSettings()) {
+            emptyList()
+        } else {
+            runCatching { settingsRepository.getAllModels() }
+                .getOrElse { emptyList() }
         }
     }
 }
