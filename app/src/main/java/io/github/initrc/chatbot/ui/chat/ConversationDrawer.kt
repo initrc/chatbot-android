@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,7 +30,6 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,29 +49,15 @@ import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
 @Composable
 fun ConversationDrawerLayout(
-    recentConversations: List<ConversationSummary>,
-    selectedConversationId: String?,
     drawerState: DrawerState,
-    onNewChatClick: () -> Unit,
-    onConversationClick: (String) -> Unit,
-    onConversationDeleteClick: (ConversationSummary) -> Unit,
-    canDeleteConversation: (String) -> Boolean,
     modifier: Modifier = Modifier,
+    drawerContent: @Composable () -> Unit,
     content: @Composable () -> Unit,
 ) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         modifier = modifier,
-        drawerContent = {
-            ConversationDrawerSheet(
-                recentConversations = recentConversations,
-                selectedConversationId = selectedConversationId,
-                onNewChatClick = onNewChatClick,
-                onConversationClick = onConversationClick,
-                onConversationDeleteClick = onConversationDeleteClick,
-                canDeleteConversation = canDeleteConversation,
-            )
-        },
+        drawerContent = drawerContent,
         content = content,
     )
 }
@@ -93,10 +79,11 @@ fun ConversationDrawerButton(
 }
 
 @Composable
-private fun ConversationDrawerSheet(
+fun ConversationDrawerSheet(
     recentConversations: List<ConversationSummary>,
     selectedConversationId: String?,
     onNewChatClick: () -> Unit,
+    onApiSettingsClick: () -> Unit,
     onConversationClick: (String) -> Unit,
     onConversationDeleteClick: (ConversationSummary) -> Unit,
     canDeleteConversation: (String) -> Boolean,
@@ -116,12 +103,8 @@ private fun ConversationDrawerSheet(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 item {
-                    Text(
-                        text = "Recent conversations",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ConversationDrawerHeader(
+                        onApiSettingsClick = onApiSettingsClick,
                     )
                 }
 
@@ -168,6 +151,35 @@ private fun ConversationDrawerSheet(
                     .navigationBarsPadding()
                     .padding(16.dp)
                     .height(56.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConversationDrawerHeader(
+    onApiSettingsClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.app_name),
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(
+            onClick = onApiSettingsClick,
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.settings_24),
+                contentDescription = "Set up API",
             )
         }
     }
@@ -269,7 +281,7 @@ private fun ConversationDrawerItemLabel(
 private fun ConversationDrawerPreview() {
     ChatbotTheme {
         Surface {
-            ConversationDrawerLayout(
+            ConversationDrawerSheet(
                 recentConversations = listOf(
                     ConversationSummary(
                         id = "1",
@@ -287,14 +299,12 @@ private fun ConversationDrawerPreview() {
                     ),
                 ),
                 selectedConversationId = "2",
-                drawerState = rememberDrawerState(initialValue = DrawerValue.Open),
                 onNewChatClick = {},
+                onApiSettingsClick = {},
                 onConversationClick = {},
                 onConversationDeleteClick = {},
                 canDeleteConversation = { true },
-            ) {
-                Surface(modifier = Modifier.fillMaxSize()) {}
-            }
+            )
         }
     }
 }

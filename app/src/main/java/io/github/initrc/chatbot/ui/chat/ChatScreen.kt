@@ -17,22 +17,17 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -74,6 +69,7 @@ import io.github.initrc.chatbot.data.ChatRole
 import io.github.initrc.chatbot.data.Message
 import io.github.initrc.chatbot.data.db.ConversationSummary
 import io.github.initrc.chatbot.ui.common.CircleIconButton
+import io.github.initrc.chatbot.ui.settings.ApiSettingsBottomSheet
 import io.github.initrc.chatbot.ui.settings.SettingsViewModel
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 import kotlinx.coroutines.launch
@@ -99,6 +95,8 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val pendingConversationDeletionIds = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
+    var showApiSettingsSheet by rememberSaveable { mutableStateOf(false) }
+    val openApiSettingsSheet = { showApiSettingsSheet = true }
     val visibleConversations = recentConversations.filterNot { conversation ->
         pendingConversationDeletionIds.contains(conversation.id)
     }
@@ -108,33 +106,43 @@ fun ChatScreen(
     }
 
     ConversationDrawerLayout(
-        recentConversations = visibleConversations,
-        selectedConversationId = conversationId,
         drawerState = drawerState,
-        onNewChatClick = {
-            chatViewModel.startNewChat()
-            scope.launch { drawerState.close() }
-        },
-        onConversationClick = { selectedConversationId ->
-            chatViewModel.loadConversation(selectedConversationId)
-            scope.launch { drawerState.close() }
-        },
-        onConversationDeleteClick = { conversation ->
-            scope.launch {
-                handleConversationDeleteClick(
-                    conversation = conversation,
-                    chatViewModel = chatViewModel,
-                    conversationViewModel = conversationViewModel,
-                    drawerState = drawerState,
-                    snackbarHostState = snackbarHostState,
-                    pendingConversationDeletionIds = pendingConversationDeletionIds,
-                )
-            }
-        },
-        canDeleteConversation = { candidateConversationId ->
-            chatState == ChatState.IDLE || candidateConversationId != conversationId
-        },
         modifier = modifier,
+        drawerContent = {
+            ConversationDrawerSheet(
+                recentConversations = visibleConversations,
+                selectedConversationId = conversationId,
+                onNewChatClick = {
+                    chatViewModel.startNewChat()
+                    scope.launch { drawerState.close() }
+                },
+                onApiSettingsClick = {
+                    scope.launch {
+                        drawerState.close()
+                        openApiSettingsSheet()
+                    }
+                },
+                onConversationClick = { selectedConversationId ->
+                    chatViewModel.loadConversation(selectedConversationId)
+                    scope.launch { drawerState.close() }
+                },
+                onConversationDeleteClick = { conversation ->
+                    scope.launch {
+                        handleConversationDeleteClick(
+                            conversation = conversation,
+                            chatViewModel = chatViewModel,
+                            conversationViewModel = conversationViewModel,
+                            drawerState = drawerState,
+                            snackbarHostState = snackbarHostState,
+                            pendingConversationDeletionIds = pendingConversationDeletionIds,
+                        )
+                    }
+                },
+                canDeleteConversation = { candidateConversationId ->
+                    chatState == ChatState.IDLE || candidateConversationId != conversationId
+                },
+            )
+        },
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -151,9 +159,16 @@ fun ChatScreen(
                 onModelSelect = settingsViewModel::setCurrentModel,
                 apiKey = apiKey,
                 baseUrl = baseUrl,
-                onApiSettingsChange = settingsViewModel::setApiSettings,
                 modifier = Modifier.fillMaxSize(),
             )
+            if (showApiSettingsSheet) {
+                ApiSettingsBottomSheet(
+                    apiKey = apiKey,
+                    baseUrl = baseUrl,
+                    onApiSettingsChange = settingsViewModel::setApiSettings,
+                    onDismissRequest = { showApiSettingsSheet = false },
+                )
+            }
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
@@ -220,7 +235,6 @@ private fun ChatScreenContent(
     onModelSelect: (String) -> Unit,
     apiKey: String,
     baseUrl: String,
-    onApiSettingsChange: (String, String) -> Unit,
     modifier: Modifier
 ) {
     var sendViewHeight by remember { mutableStateOf(0.dp) }
@@ -232,9 +246,6 @@ private fun ChatScreenContent(
             currentModel = currentModel,
             allModels = allModels,
             onModelSelect = onModelSelect,
-            apiKey = apiKey,
-            baseUrl = baseUrl,
-            onApiSettingsChange = onApiSettingsChange,
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
@@ -276,14 +287,9 @@ fun ModelHeader(
     currentModel: String,
     allModels: List<String>,
     onModelSelect: (String) -> Unit,
-    apiKey: String,
-    baseUrl: String,
-    onApiSettingsChange: (String, String) -> Unit,
     modifier: Modifier,
 ) {
     var showModelBottomSheet by remember { mutableStateOf(false) }
-    var showApiBottomSheet by remember { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     val sortedModels = remember(allModels) { allModels.sorted() }
@@ -305,32 +311,6 @@ fun ModelHeader(
                 text = "$currentModel ▾",
                 style = MaterialTheme.typography.titleMedium,
             )
-        }
-
-        Box(
-           modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            IconButton(
-                onClick = { showMenu = true },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Text(
-                    text = "⋮",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Set up API") },
-                    onClick = {
-                        showMenu = false
-                        showApiBottomSheet = true
-                    },
-                )
-            }
         }
 
     }
@@ -388,62 +368,8 @@ fun ModelHeader(
             }
         }
     }
-
-    if (showApiBottomSheet) {
-        var tempApiKey by remember { mutableStateOf(apiKey) }
-        var tempBaseUrl by remember { mutableStateOf(baseUrl) }
-
-        ModalBottomSheet(
-            onDismissRequest = { showApiBottomSheet = false },
-            sheetState = sheetState,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "Set up API",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                )
-                OutlinedTextField(
-                    value = tempBaseUrl,
-                    onValueChange = { tempBaseUrl = it },
-                    label = { Text("Base URL") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = tempApiKey,
-                    onValueChange = { tempApiKey = it },
-                    label = { Text("API Key") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                    singleLine = true,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(
-                        onClick = { showApiBottomSheet = false },
-                    ) {
-                        Text("Cancel")
-                    }
-                    TextButton(
-                        onClick = {
-                            onApiSettingsChange(tempApiKey, tempBaseUrl)
-                            showApiBottomSheet = false
-                        },
-                    ) {
-                        Text("Save")
-                    }
-                }
-            }
-        }
-    }
 }
+
 @Composable
 fun MessageList(
     messages: List<Message>,
@@ -655,7 +581,6 @@ fun ChatScreenPreview() {
                 onModelSelect = {},
                 apiKey = "",
                 baseUrl = "https://api.groq.com/openai/v1",
-                onApiSettingsChange = { _: String, _: String -> },
                 modifier = Modifier,
             )
         }
