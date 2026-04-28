@@ -26,8 +26,9 @@ References:
 - Use `MediaRecorder` to capture microphone input into the app cache directory.
 - Record as `.m4a` using `MediaRecorder.OutputFormat.MPEG_4` and
   `MediaRecorder.AudioEncoder.AAC`, which Groq supports.
-- Track amplitude with `MediaRecorder.maxAmplitude` on a coroutine timer for
-  the waveform UI.
+- Track amplitude with `MediaRecorder.maxAmplitude` for the waveform UI:
+  poll every `50ms`, average four polls into one `200ms` bar, shift a fixed
+  bar list left, and append the latest bar at the end.
 - Release recorder resources on stop, cancellation, errors, and ViewModel
   cleanup.
 
