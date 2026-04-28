@@ -20,6 +20,10 @@ Important areas:
   app entry point.
 - `app/src/main/java/io/github/initrc/chatbot/ui/chat`: chat screen, drawer,
   markdown rendering, and chat view models.
+- `app/src/main/java/io/github/initrc/chatbot/ui/chat/ChatScreen.kt`: chat route
+  state wiring, drawer coordination, settings sheet, and snackbar side effects.
+- `app/src/main/java/io/github/initrc/chatbot/ui/chat/ChatScreenContent.kt`,
+  `ModelHeader.kt`, `MessageList.kt`, and `SendView.kt`: chat UI rendering pieces.
 - `app/src/main/java/io/github/initrc/chatbot/ui/settings`: settings view model.
 - `app/src/main/java/io/github/initrc/chatbot/data`: repositories, settings,
   remote chat calls, and context compression.
@@ -71,6 +75,9 @@ the local environment supports it.
 - Preserve coroutine cancellation by rethrowing `CancellationException`.
 - Keep Compose components small enough to preview and test mentally. Add previews
   for meaningful standalone UI states when changing visual behavior.
+- Keep chat UI split by responsibility: `ChatScreen.kt` wires ViewModels and
+  route-level side effects, while content, model selection, messages, and composer
+  controls live in sibling files under `ui/chat`.
 - Prefer Material 3 components and the existing theme in `ui/theme`.
 - Do not introduce broad navigation, styling, dependency, or schema refactors
   unless the task requires them.
@@ -104,4 +111,3 @@ the local environment supports it.
   the task explicitly needs it.
 - Do not commit secrets. Treat stored API keys and base URLs as user data.
 - If the worktree already has unrelated changes, leave them alone.
-
