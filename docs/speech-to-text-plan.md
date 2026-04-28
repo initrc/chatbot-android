@@ -24,8 +24,10 @@ References:
 
 - Create a focused recorder class, for example `AudioRecorder`.
 - Use `MediaRecorder` to capture microphone input into the app cache directory.
-- Record as `.m4a` using `MediaRecorder.OutputFormat.MPEG_4` and
+- Record mono `.m4a` using `MediaRecorder.OutputFormat.MPEG_4` and
   `MediaRecorder.AudioEncoder.AAC`, which Groq supports.
+- Use `16kHz` sampling and `64kbps` AAC to keep speech uploads small without
+  adding an on-device transcoding dependency.
 - Track amplitude with `MediaRecorder.maxAmplitude` for the waveform UI:
   poll every `50ms`, average four polls into one `200ms` bar, shift a fixed
   bar list left, and append the latest bar at the end.
@@ -41,9 +43,8 @@ References:
 - Send a multipart `POST` to `${baseUrl}/audio/transcriptions` with:
   - `file`: recorded `.m4a`
   - `model`: `whisper-large-v3-turbo`
-  - `response_format`: `json`
-  - `temperature`: `0`
-- Parse the JSON response field `text`.
+  - `response_format`: `text`
+- Read the response body as the transcript string.
 - Never log API keys or audio contents.
 
 ## 4. Add Speech State Ownership
