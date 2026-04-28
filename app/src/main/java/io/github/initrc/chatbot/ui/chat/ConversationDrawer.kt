@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.initrc.chatbot.R
 import io.github.initrc.chatbot.data.db.ConversationSummary
+import io.github.initrc.chatbot.ui.settings.ApiSettingsIconButton
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 
 @Composable
@@ -173,15 +174,10 @@ private fun ConversationDrawerHeader(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        IconButton(
+        ApiSettingsIconButton(
             onClick = onApiSettingsClick,
             modifier = Modifier.size(48.dp),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.settings_24),
-                contentDescription = "Set up API",
-            )
-        }
+        )
     }
 }
 

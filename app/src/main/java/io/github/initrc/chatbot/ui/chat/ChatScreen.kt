@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,8 +23,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -70,6 +70,7 @@ import io.github.initrc.chatbot.data.Message
 import io.github.initrc.chatbot.data.db.ConversationSummary
 import io.github.initrc.chatbot.ui.common.CircleIconButton
 import io.github.initrc.chatbot.ui.settings.ApiSettingsBottomSheet
+import io.github.initrc.chatbot.ui.settings.ApiSettingsIconButton
 import io.github.initrc.chatbot.ui.settings.SettingsViewModel
 import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 import kotlinx.coroutines.launch
@@ -159,6 +160,7 @@ fun ChatScreen(
                 onModelSelect = settingsViewModel::setCurrentModel,
                 apiKey = apiKey,
                 baseUrl = baseUrl,
+                onApiSettingsClick = openApiSettingsSheet,
                 modifier = Modifier.fillMaxSize(),
             )
             if (showApiSettingsSheet) {
@@ -235,10 +237,12 @@ private fun ChatScreenContent(
     onModelSelect: (String) -> Unit,
     apiKey: String,
     baseUrl: String,
+    onApiSettingsClick: () -> Unit,
     modifier: Modifier
 ) {
     var sendViewHeight by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
+    val hasApiSettings = apiKey.isNotBlank() && baseUrl.isNotBlank()
 
     Column(modifier = modifier.fillMaxSize()) {
         ModelHeader(
@@ -257,26 +261,67 @@ private fun ChatScreenContent(
                 .imePadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
-            MessageList(
-                messages = messages,
-                modifier = Modifier.fillMaxSize(),
-                bottomContentPadding = sendViewHeight + 8.dp
-            )
-            SendView(
-                onSendClick = onSendClick,
-                isEnabled = chatState == ChatState.IDLE &&
-                    apiKey.isNotBlank() &&
-                    baseUrl.isNotBlank(),
-                model = currentModel,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 8.dp)
-                    .onGloballyPositioned { coordinates ->
-                        sendViewHeight = with(density) { coordinates.size.height.toDp() }
-                    }
+            if (hasApiSettings) {
+                MessageList(
+                    messages = messages,
+                    modifier = Modifier.fillMaxSize(),
+                    bottomContentPadding = sendViewHeight + 8.dp
+                )
+                SendView(
+                    onSendClick = onSendClick,
+                    isEnabled = chatState == ChatState.IDLE,
+                    model = currentModel,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp)
+                        .onGloballyPositioned { coordinates ->
+                            sendViewHeight = with(density) { coordinates.size.height.toDp() }
+                        }
+                )
+            } else {
+                ApiSettingsEmptyState(
+                    onApiSettingsClick = onApiSettingsClick,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApiSettingsEmptyState(
+    onApiSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ) {
+            ApiSettingsIconButton(
+                onClick = onApiSettingsClick,
+                modifier = Modifier.padding(8.dp)
             )
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Set up API to start chatting",
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Add a base URL and API key",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -581,6 +626,7 @@ fun ChatScreenPreview() {
                 onModelSelect = {},
                 apiKey = "",
                 baseUrl = "https://api.groq.com/openai/v1",
+                onApiSettingsClick = {},
                 modifier = Modifier,
             )
         }
