@@ -12,10 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,12 +24,13 @@ import io.github.initrc.chatbot.ui.common.CircleIconButton
 
 @Composable
 fun SendView(
+    text: String,
+    onTextChange: (String) -> Unit,
     onSendClick: (String, String) -> Unit,
     isEnabled: Boolean,
     model: String,
     modifier: Modifier,
 ) {
-    var text by rememberSaveable { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
     val canSend = isEnabled && text.isNotEmpty()
 
@@ -46,7 +43,7 @@ fun SendView(
     ) {
         TextField(
             value = text,
-            onValueChange = { text = it },
+            onValueChange = onTextChange,
             placeholder = {
                 Text(text = "Ask AI")
             },
@@ -67,7 +64,7 @@ fun SendView(
                 onClick = {
                     focusManager.clearFocus()
                     onSendClick(text, model)
-                    text = ""
+                    onTextChange("")
                 },
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
