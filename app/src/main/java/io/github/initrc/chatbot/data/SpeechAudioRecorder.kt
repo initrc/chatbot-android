@@ -28,7 +28,7 @@ private const val AUDIO_FILE_SUFFIX = ".m4a"
 private const val AMPLITUDE_POLL_INTERVAL_MILLIS = 50L
 private const val WAVEFORM_BAR_INTERVAL_MILLIS = 200L
 private const val WAVEFORM_BAR_COUNT = 40
-private const val MAX_MEDIA_RECORDER_AMPLITUDE = 32_767f
+private const val WAVEFORM_REFERENCE_AMPLITUDE = 8_192f
 private const val AUDIO_ENCODING_BIT_RATE = 64_000
 private const val AUDIO_SAMPLING_RATE = 16_000
 private const val AMPLITUDE_SAMPLES_PER_BAR =
@@ -156,7 +156,7 @@ class SpeechAudioRecorder @Inject constructor(
 
 private fun MediaRecorder.normalizedAmplitude(): Float {
     return try {
-        (maxAmplitude / MAX_MEDIA_RECORDER_AMPLITUDE).coerceIn(0f, 1f)
+        (maxAmplitude / WAVEFORM_REFERENCE_AMPLITUDE).coerceIn(0f, 1f)
     } catch (_: IllegalStateException) {
         0f
     }
