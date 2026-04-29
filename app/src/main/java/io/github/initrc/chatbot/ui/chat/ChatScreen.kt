@@ -26,6 +26,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -61,6 +63,12 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val pendingConversationDeletionIds = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    fun hideKeyboard() {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+    }
     var showApiSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var draftText by rememberSaveable { mutableStateOf("") }
     val openApiSettingsSheet = { showApiSettingsSheet = true }
@@ -173,6 +181,7 @@ fun ChatScreen(
                 onDraftTextChange = { draftText = it },
                 speechState = speechState,
                 onConversationListClick = {
+                    hideKeyboard()
                     scope.launch { drawerState.open() }
                 },
                 onSendClick = chatViewModel::onSendClick,
