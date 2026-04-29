@@ -14,6 +14,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -27,7 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.initrc.chatbot.data.db.ConversationSummary
 import io.github.initrc.chatbot.ui.settings.ApiSettingsBottomSheet
 import io.github.initrc.chatbot.ui.settings.SettingsViewModel
@@ -52,6 +56,7 @@ fun ChatScreen(
     val allModels by settingsViewModel.allModels.collectAsStateWithLifecycle()
     val apiKey by settingsViewModel.apiKey.collectAsStateWithLifecycle()
     val baseUrl by settingsViewModel.baseUrl.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val snackbarHostState = remember { SnackbarHostState() }
     val pendingConversationDeletionIds = remember { mutableStateListOf<String>() }
@@ -99,6 +104,19 @@ fun ChatScreen(
         speechToTextViewModel.clearError()
     }
 
+    DisposableEffect(lifecycleOwner, speechToTextViewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                speechToTextViewModel.cancelRecording()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            speechToTextViewModel.cancelRecording()
+        }
+    }
+
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
     }
@@ -111,16 +129,19 @@ fun ChatScreen(
                 recentConversations = visibleConversations,
                 selectedConversationId = conversationId,
                 onNewChatClick = {
+                    speechToTextViewModel.cancelRecording()
                     chatViewModel.startNewChat()
                     scope.launch { drawerState.close() }
                 },
                 onApiSettingsClick = {
+                    speechToTextViewModel.cancelRecording()
                     scope.launch {
                         drawerState.close()
                         openApiSettingsSheet()
                     }
                 },
                 onConversationClick = { selectedConversationId ->
+                    speechToTextViewModel.cancelRecording()
                     chatViewModel.loadConversation(selectedConversationId)
                     scope.launch { drawerState.close() }
                 },
