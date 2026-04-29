@@ -110,14 +110,11 @@ class SpeechAudioRecorder @Inject constructor(
         _amplitudes.value = emptyAmplitudeBars
         amplitudeJob?.cancel()
         amplitudeJob = scope.launch {
-            val pendingSamples = mutableListOf<Float>()
+            val waveformAggregator = SpeechWaveformAggregator()
             while (isActive) {
-                pendingSamples += mediaRecorder.normalizedAmplitude()
-                if (pendingSamples.size == AMPLITUDE_SAMPLES_PER_BAR) {
-                    val barAmplitude = pendingSamples.average().toFloat()
-                    _amplitudes.value = _amplitudes.value
-                        .drop(1) + barAmplitude
-                    pendingSamples.clear()
+                val bars = waveformAggregator.addRawAmplitude(mediaRecorder.safeMaxAmplitude())
+                if (bars != null) {
+                    _amplitudes.value = bars
                 }
                 delay(AMPLITUDE_POLL_INTERVAL_MILLIS)
             }
@@ -154,10 +151,44 @@ class SpeechAudioRecorder @Inject constructor(
     }
 }
 
-private fun MediaRecorder.normalizedAmplitude(): Float {
+internal class SpeechWaveformAggregator(
+    private val barCount: Int = WAVEFORM_BAR_COUNT,
+    private val samplesPerBar: Int = AMPLITUDE_SAMPLES_PER_BAR,
+) {
+    init {
+        require(barCount > 0) { "Waveform bar count must be positive." }
+        require(samplesPerBar > 0) { "Waveform samples per bar must be positive." }
+    }
+
+    val emptyBars: List<Float> = List(barCount) { 0f }
+    private val pendingSamples = mutableListOf<Float>()
+    private var bars = emptyBars
+
+    fun addRawAmplitude(maxAmplitude: Int): List<Float>? {
+        pendingSamples += normalizeSpeechAmplitude(maxAmplitude)
+        if (pendingSamples.size < samplesPerBar) return null
+
+        val barAmplitude = pendingSamples.average().toFloat()
+        bars = bars.drop(1) + barAmplitude
+        pendingSamples.clear()
+        return bars
+    }
+
+    fun reset(): List<Float> {
+        pendingSamples.clear()
+        bars = emptyBars
+        return bars
+    }
+}
+
+internal fun normalizeSpeechAmplitude(maxAmplitude: Int): Float {
+    return (maxAmplitude / WAVEFORM_REFERENCE_AMPLITUDE).coerceIn(0f, 1f)
+}
+
+private fun MediaRecorder.safeMaxAmplitude(): Int {
     return try {
-        (maxAmplitude / WAVEFORM_REFERENCE_AMPLITUDE).coerceIn(0f, 1f)
+        maxAmplitude
     } catch (_: IllegalStateException) {
-        0f
+        0
     }
 }

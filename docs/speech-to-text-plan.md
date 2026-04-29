@@ -102,10 +102,14 @@ References:
 
 ## 8. Test And Verify
 
-- Add JVM tests for transcription response parsing and request construction
-  where the data source is injectable.
-- Add focused UI coverage for `SendView` recording-state transitions if
-  practical.
-- Run `./gradlew :app:testDebugUnitTest`.
+- Added JVM coverage for speech data-layer logic:
+  - transcription request values, endpoint construction, missing-file validation,
+    and plain-text response trimming
+  - recorder waveform amplitude normalization, bar aggregation, sliding-window
+    updates, and reset behavior
+- Deferred UI coverage for `SendView` recording-state transitions; those paths
+  are tied to Compose state and runtime permission handling and should be covered
+  with instrumentation/Compose tests if the speech UI changes again.
+- Verified with `./gradlew :app:testDebugUnitTest`.
 - Manually test microphone recording on a physical Android device because
   emulator audio capture is not reliable for this feature.

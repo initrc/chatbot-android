@@ -25,33 +25,56 @@ class SpeechToTextRemoteDataSource @Inject constructor(
     private val client = HttpClient(CIO)
 
     override suspend fun transcribe(audioFile: File): String {
-        require(audioFile.isFile) { "Audio file does not exist: ${audioFile.name}" }
-
         val apiKey = settingsLocalDataSource.getApiKey()
         val baseUrl = settingsLocalDataSource.getBaseUrl()
 
-        val response: String = client.post("$baseUrl/audio/transcriptions") {
+        val response: String = client.post(speechTranscriptionEndpoint(baseUrl)) {
             header(HttpHeaders.Authorization, "Bearer $apiKey")
-            setBody(createTranscriptionRequest(audioFile))
+            setBody(createSpeechTranscriptionRequest(audioFile).toMultipartContent())
         }.body()
 
-        return response.trim()
+        return parseSpeechTranscriptionResponse(response)
     }
+}
 
-    private fun createTranscriptionRequest(audioFile: File): MultiPartFormDataContent {
+internal class SpeechTranscriptionRequest(
+    val fileName: String,
+    val fileBytes: ByteArray,
+    val audioContentType: String = SPEECH_AUDIO_CONTENT_TYPE,
+    val model: String = SPEECH_TO_TEXT_MODEL,
+    val responseFormat: String = SPEECH_RESPONSE_FORMAT,
+) {
+    fun toMultipartContent(): MultiPartFormDataContent {
         return MultiPartFormDataContent(
             formData {
-                append("file", audioFile.readBytes(), audioFileHeaders(audioFile))
-                append("model", SPEECH_TO_TEXT_MODEL)
-                append("response_format", SPEECH_RESPONSE_FORMAT)
+                append("file", fileBytes, audioFileHeaders())
+                append("model", model)
+                append("response_format", responseFormat)
             }
         )
     }
 
-    private fun audioFileHeaders(audioFile: File): Headers {
+    private fun audioFileHeaders(): Headers {
         return Headers.build {
-            append(HttpHeaders.ContentType, SPEECH_AUDIO_CONTENT_TYPE)
-            append(HttpHeaders.ContentDisposition, "filename=\"${audioFile.name}\"")
+            append(HttpHeaders.ContentType, audioContentType)
+            append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
         }
     }
+}
+
+internal fun createSpeechTranscriptionRequest(audioFile: File): SpeechTranscriptionRequest {
+    require(audioFile.isFile) { "Audio file does not exist: ${audioFile.name}" }
+
+    return SpeechTranscriptionRequest(
+        fileName = audioFile.name,
+        fileBytes = audioFile.readBytes(),
+    )
+}
+
+internal fun speechTranscriptionEndpoint(baseUrl: String): String {
+    return "$baseUrl/audio/transcriptions"
+}
+
+internal fun parseSpeechTranscriptionResponse(response: String): String {
+    return response.trim()
 }
