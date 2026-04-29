@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 // 24dp icon in a 36dp circle wrapped with 6dp padding to achieve a 48dp touch target
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 fun CircleIconButton(
     onClick: () -> Unit,
     modifier: Modifier,
+    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -32,7 +34,7 @@ fun CircleIconButton(
             )
             .padding(all = 6.dp)
             .background(
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = backgroundColor,
                 shape = CircleShape,
             ),
         contentAlignment = Alignment.Center,

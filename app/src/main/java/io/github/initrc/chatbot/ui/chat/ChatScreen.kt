@@ -14,11 +14,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,11 +40,13 @@ fun ChatScreen(
     chatViewModel: ChatViewModel = hiltViewModel(),
     conversationViewModel: ConversationViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
+    speechToTextViewModel: SpeechToTextViewModel = hiltViewModel(),
     modifier: Modifier
 ) {
     val messages by chatViewModel.messages.collectAsStateWithLifecycle()
     val chatState by chatViewModel.chatState.collectAsStateWithLifecycle()
     val conversationId by chatViewModel.conversationId.collectAsStateWithLifecycle()
+    val speechState by speechToTextViewModel.speechState.collectAsStateWithLifecycle()
     val recentConversations by conversationViewModel.recentConversations.collectAsStateWithLifecycle()
     val currentModel by settingsViewModel.currentModel.collectAsStateWithLifecycle()
     val allModels by settingsViewModel.allModels.collectAsStateWithLifecycle()
@@ -53,9 +57,46 @@ fun ChatScreen(
     val pendingConversationDeletionIds = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
     var showApiSettingsSheet by rememberSaveable { mutableStateOf(false) }
+    var draftText by rememberSaveable { mutableStateOf("") }
     val openApiSettingsSheet = { showApiSettingsSheet = true }
     val visibleConversations = recentConversations.filterNot { conversation ->
         pendingConversationDeletionIds.contains(conversation.id)
+    }
+    val latestCurrentModel by rememberUpdatedState(currentModel)
+    val latestChatState by rememberUpdatedState(chatState)
+    val requestSpeechRecording = rememberSpeechRecordingPermissionRequest(
+        canStartRecording = {
+            chatState == ChatState.IDLE &&
+                speechState !is SpeechToTextState.Recording &&
+                speechState !is SpeechToTextState.Transcribing
+        },
+        onPermissionGranted = speechToTextViewModel::startRecording,
+        onPermissionDenied = {
+            scope.launch {
+                snackbarHostState.showSnackbar("Microphone permission denied")
+            }
+        },
+    )
+
+    LaunchedEffect(speechToTextViewModel) {
+        speechToTextViewModel.speechResults.collect { speechResult ->
+            val transcript = speechResult.text
+            draftText = transcript
+            if (
+                speechResult.autoSend &&
+                transcript.isNotBlank() &&
+                latestChatState == ChatState.IDLE
+            ) {
+                chatViewModel.onSendClick(transcript, latestCurrentModel)
+                draftText = ""
+            }
+        }
+    }
+
+    LaunchedEffect(speechState) {
+        val errorState = speechState as? SpeechToTextState.Error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(errorState.message)
+        speechToTextViewModel.clearError()
     }
 
     BackHandler(enabled = drawerState.isOpen) {
@@ -107,10 +148,20 @@ fun ChatScreen(
             ChatScreenContent(
                 messages = messages,
                 chatState = chatState,
+                draftText = draftText,
+                onDraftTextChange = { draftText = it },
+                speechState = speechState,
                 onConversationListClick = {
                     scope.launch { drawerState.open() }
                 },
                 onSendClick = chatViewModel::onSendClick,
+                onMicClick = requestSpeechRecording,
+                onStopSpeechClick = {
+                    speechToTextViewModel.stopAndTranscribe(autoSend = false)
+                },
+                onSendSpeechClick = {
+                    speechToTextViewModel.stopAndTranscribe(autoSend = true)
+                },
                 currentModel = currentModel,
                 allModels = allModels,
                 onModelSelect = settingsViewModel::setCurrentModel,

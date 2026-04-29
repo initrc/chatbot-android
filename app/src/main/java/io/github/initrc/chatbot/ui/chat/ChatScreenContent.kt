@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,8 +35,14 @@ import io.github.initrc.chatbot.ui.theme.ChatbotTheme
 internal fun ChatScreenContent(
     messages: List<Message>,
     chatState: ChatState,
+    draftText: String,
+    onDraftTextChange: (String) -> Unit,
+    speechState: SpeechToTextState,
     onConversationListClick: () -> Unit,
     onSendClick: (String, String) -> Unit,
+    onMicClick: () -> Unit,
+    onStopSpeechClick: () -> Unit,
+    onSendSpeechClick: () -> Unit,
     currentModel: String,
     allModels: List<String>,
     onModelSelect: (String) -> Unit,
@@ -47,9 +52,10 @@ internal fun ChatScreenContent(
     modifier: Modifier,
 ) {
     var sendViewHeight by remember { mutableStateOf(0.dp) }
-    var draftText by rememberSaveable { mutableStateOf("") }
     val density = LocalDensity.current
     val hasApiSettings = apiKey.isNotBlank() && baseUrl.isNotBlank()
+    val isComposerEnabled = chatState == ChatState.IDLE &&
+        speechState !is SpeechToTextState.Transcribing
 
     Column(modifier = modifier.fillMaxSize()) {
         ModelHeader(
@@ -76,9 +82,13 @@ internal fun ChatScreenContent(
                 )
                 SendView(
                     text = draftText,
-                    onTextChange = { draftText = it },
+                    onTextChange = onDraftTextChange,
                     onSendClick = onSendClick,
-                    isEnabled = chatState == ChatState.IDLE,
+                    speechState = speechState,
+                    onMicClick = onMicClick,
+                    onStopSpeechClick = onStopSpeechClick,
+                    onSendSpeechClick = onSendSpeechClick,
+                    isEnabled = isComposerEnabled,
                     model = currentModel,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -154,8 +164,14 @@ fun ChatScreenPreview() {
                     Message(role = ChatRole.ASSISTANT, content = "Text $index from bot")
                 },
                 chatState = ChatState.IDLE,
+                draftText = "",
+                onDraftTextChange = {},
+                speechState = SpeechToTextState.Idle,
                 onConversationListClick = {},
                 onSendClick = { _: String, _: String -> },
+                onMicClick = {},
+                onStopSpeechClick = {},
+                onSendSpeechClick = {},
                 currentModel = "llama-3.1-8b-instant",
                 allModels = listOf("llama-3.1-8b-instant"),
                 onModelSelect = {},
