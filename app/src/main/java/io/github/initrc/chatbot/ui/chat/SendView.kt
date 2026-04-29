@@ -82,11 +82,11 @@ fun SendView(
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
                         .padding(end = if (canSend) 0.dp else 4.dp),
-                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.mic_24),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         contentDescription = "Start voice input",
                     )
                 }
@@ -209,11 +209,11 @@ private fun SpeechRecordingControls(
         CircleIconButton(
             onClick = onStopClick,
             modifier = Modifier.align(Alignment.CenterVertically),
-            backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+            backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
         ) {
             Icon(
                 painter = painterResource(R.drawable.stop_circle_24),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 contentDescription = "Stop recording",
             )
         }
